@@ -1,0 +1,85 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Admin users authenticate with username + password (bcrypt-style scrypt hash).
+// This replaces the prior password-only verification.
+model AdminUser {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  name         String?
+  role         String   @default("admin")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  icon      String?
+  products  Product[]
+  createdAt DateTime  @default(now())
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  // SQLite cannot store lists as primitives, so gallery images are a JSON string array.
+  image         String
+  images        String?
+  price         Float
+  compareAtPrice Float?
+  rating        Float    @default(0)
+  reviewCount   Int      @default(0)
+  brand         String?
+  badge         String?  // "deal" | "bestseller" | "new" | null
+  featured      Boolean  @default(false)
+  stock         Int      @default(0)
+  affiliateUrl  String
+  categoryId    String
+  category      Category @relation(fields: [categoryId], references: [id])
+  clicks        AffiliateClick[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([categoryId])
+  @@index([featured])
+  @@index([badge])
+}
+
+model AffiliateClick {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  ip        String?
+  userAgent String?
+  referrer  String?
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+  @@index([createdAt])
+}
+
+model Order {
+  id            String   @id @default(cuid())
+  productId     String
+  quantity      Int      @default(1)
+  total         Float
+  status        String   @default("pending")
+  customerEmail String?
+  createdAt     DateTime @default(now())
+
+  @@index([productId])
+  @@index([createdAt])
+}
