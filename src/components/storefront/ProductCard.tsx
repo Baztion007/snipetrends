@@ -1,11 +1,12 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ShoppingCart, Eye } from "lucide-react";
+import { ShoppingCart, Eye, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { StarRating } from "./StarRating";
 import { useCart } from "@/lib/cart-store";
+import { useWishlist } from "@/lib/wishlist-store";
 import { formatPrice, discountPercent } from "@/lib/format";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -24,6 +25,8 @@ interface ProductCardProps {
 
 export function ProductCard({ product, onSelect }: ProductCardProps) {
   const addItem = useCart((s) => s.addItem);
+  const wishlistToggle = useWishlist((s) => s.toggle);
+  const isWishlisted = useWishlist((s) => s.has(product.id));
   const discount = discountPercent(product.price, product.compareAtPrice);
   const outOfStock = product.stock <= 0;
 
@@ -32,6 +35,15 @@ export function ProductCard({ product, onSelect }: ProductCardProps) {
     if (outOfStock) return;
     addItem(product, 1);
     toast.success("Added to cart", { description: product.title });
+  };
+
+  const handleWishlist = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const wasIn = isWishlisted;
+    wishlistToggle(product);
+    toast(wasIn ? "Removed from wishlist" : "Saved to wishlist", {
+      description: product.title,
+    });
   };
 
   const handleView = (e: React.MouseEvent) => {
@@ -90,6 +102,23 @@ export function ProductCard({ product, onSelect }: ProductCardProps) {
               </span>
             </div>
           )}
+          {/* Wishlist heart */}
+          <button
+            onClick={handleWishlist}
+            aria-label={isWishlisted ? `Remove ${product.title} from wishlist` : `Save ${product.title} to wishlist`}
+            aria-pressed={isWishlisted}
+            className="absolute right-2 bottom-2 grid size-9 place-items-center rounded-full bg-background/90 shadow-md backdrop-blur transition-all hover:scale-110"
+          >
+            <Heart
+              size={17}
+              className={cn(
+                "transition-all",
+                isWishlisted
+                  ? "fill-rose-500 text-rose-500"
+                  : "text-zinc-500 hover:text-rose-500"
+              )}
+            />
+          </button>
         </div>
 
         {/* Body */}

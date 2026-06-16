@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StarRating } from "./StarRating";
 import { useCart } from "@/lib/cart-store";
+import { useWishlist } from "@/lib/wishlist-store";
+import { useRecentlyViewed } from "@/lib/recently-viewed-store";
 import { formatPrice, discountPercent } from "@/lib/format";
 import { toast } from "sonner";
 import {
@@ -21,6 +23,10 @@ import {
   Check,
   AlertTriangle,
   XCircle,
+  Heart,
+  Truck,
+  RotateCcw,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Product } from "@/lib/types";
@@ -75,16 +81,20 @@ export function ProductDetailDialog({
   const [qty, setQty] = useState(1);
   const [redirecting, setRedirecting] = useState(false);
   const addItem = useCart((s) => s.addItem);
+  const wishlistToggle = useWishlist((s) => s.toggle);
+  const isWishlisted = useWishlist((s) => (product ? s.has(product.id) : false));
+  const pushRecent = useRecentlyViewed((s) => s.push);
 
   const open = !!product;
 
   // Reset internal state whenever the dialog opens for a new product.
   useEffect(() => {
-    if (open) {
+    if (open && product) {
       setQty(1);
       setRedirecting(false);
+      pushRecent(product);
     }
-  }, [open, product?.id]);
+  }, [open, product, pushRecent]);
 
   const discount = product
     ? discountPercent(product.price, product.compareAtPrice)
@@ -122,6 +132,15 @@ export function ProductDetailDialog({
     } finally {
       setRedirecting(false);
     }
+  };
+
+  const handleWishlist = () => {
+    if (!product) return;
+    const wasIn = isWishlisted;
+    wishlistToggle(product);
+    toast(wasIn ? "Removed from wishlist" : "Saved to wishlist", {
+      description: product.title,
+    });
   };
 
   const maxQty = product ? Math.max(1, product.stock || 99) : 99;
@@ -274,7 +293,7 @@ export function ProductDetailDialog({
                 </div>
 
                 {/* Actions */}
-                <div className="mt-auto flex flex-col gap-2 pt-4 sm:flex-row">
+                <div className="flex flex-col gap-2 pt-4 sm:flex-row">
                   <Button
                     onClick={handleAdd}
                     disabled={product.stock <= 0}
@@ -291,6 +310,37 @@ export function ProductDetailDialog({
                     <ExternalLink size={16} />
                     {redirecting ? "Redirecting…" : "Buy Now via Partner"}
                   </Button>
+                  <Button
+                    onClick={handleWishlist}
+                    variant="outline"
+                    className={cn(
+                      "h-11 gap-2 px-4",
+                      isWishlisted && "border-rose-400 text-rose-600 hover:bg-rose-500/10"
+                    )}
+                    aria-pressed={isWishlisted}
+                  >
+                    <Heart
+                      size={16}
+                      className={cn(isWishlisted && "fill-rose-500 text-rose-500")}
+                    />
+                    {isWishlisted ? "Saved" : "Save"}
+                  </Button>
+                </div>
+
+                {/* Trust badges */}
+                <div className="mt-3 grid grid-cols-3 gap-2 rounded-lg border bg-muted/30 p-3 text-center">
+                  <div className="flex flex-col items-center gap-1">
+                    <Truck className="size-5 text-amber-500" />
+                    <span className="text-[11px] font-medium leading-tight">Free Shipping</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-1">
+                    <RotateCcw className="size-5 text-emerald-500" />
+                    <span className="text-[11px] font-medium leading-tight">30-Day Returns</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-1">
+                    <ShieldCheck className="size-5 text-violet-500" />
+                    <span className="text-[11px] font-medium leading-tight">Secure Partner</span>
+                  </div>
                 </div>
               </div>
             </div>

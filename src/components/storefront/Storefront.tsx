@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { StoreHeader, DEALS_SENTINEL } from "./StoreHeader";
 import { HeroCarousel } from "./HeroCarousel";
 import { DealsRail } from "./DealsRail";
@@ -8,6 +8,14 @@ import { ProductGrid } from "./ProductGrid";
 import { StoreFooter } from "./StoreFooter";
 import { ProductDetailDialog } from "./ProductDetailDialog";
 import { CartSheet } from "./CartSheet";
+import { WishlistSheet } from "./WishlistSheet";
+import { RecentlyViewedRail } from "./RecentlyViewedRail";
+import {
+  FilterPanel,
+  applyFilters,
+  DEFAULT_FILTERS,
+  type FilterState,
+} from "./FilterPanel";
 import {
   Select,
   SelectContent,
@@ -15,7 +23,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { SlidersHorizontal, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { SlidersHorizontal, X, Filter } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import type { Product, Category } from "@/lib/types";
 
 export interface StorefrontProps {
@@ -38,6 +54,9 @@ export function Storefront({ onOpenAdmin }: StorefrontProps) {
   const [sort, setSort] = useState("featured");
   const [selected, setSelected] = useState<Product | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
+  const [wishlistOpen, setWishlistOpen] = useState(false);
+  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   // Fetch categories once on mount.
   useEffect(() => {
@@ -48,8 +67,6 @@ export function Storefront({ onOpenAdmin }: StorefrontProps) {
   }, []);
 
   // Fetch products whenever search / category / sort changes.
-  // Loading is flipped to true in the event handlers (not here) to avoid
-  // synchronous setState inside the effect body.
   useEffect(() => {
     let url: string;
     const q = searchQuery.trim();
@@ -84,12 +101,14 @@ export function Storefront({ onOpenAdmin }: StorefrontProps) {
     setLoading(true);
     setSearchQuery(q);
     if (q) setActiveCategory(null);
+    setFilters(DEFAULT_FILTERS);
   }, []);
 
   const handleCategory = useCallback((id: string | null) => {
     setLoading(true);
     setActiveCategory(id);
     if (id) setSearchQuery("");
+    setFilters(DEFAULT_FILTERS);
   }, []);
 
   const handleSort = useCallback((value: string) => {
@@ -102,7 +121,14 @@ export function Storefront({ onOpenAdmin }: StorefrontProps) {
     setSearchQuery("");
     setActiveCategory(null);
     setSort("featured");
+    setFilters(DEFAULT_FILTERS);
   }, []);
+
+  // Client-side filtering on the fetched products.
+  const filteredProducts = useMemo(
+    () => applyFilters(products, filters),
+    [products, filters]
+  );
 
   const deals = products.filter(
     (p) => p.compareAtPrice && p.compareAtPrice > p.price
@@ -112,11 +138,20 @@ export function Storefront({ onOpenAdmin }: StorefrontProps) {
   const showChrome = !searchQuery.trim() && activeCategory !== DEALS_SENTINEL;
   const hasActiveFilter = !!searchQuery.trim() || activeCategory !== null;
 
+  const filterContent = (
+    <FilterPanel
+      products={products}
+      filters={filters}
+      onChange={setFilters}
+    />
+  );
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <StoreHeader
         onOpenAdmin={onOpenAdmin}
         onOpenCart={() => setCartOpen(true)}
+        onOpenWishlist={() => setWishlistOpen(true)}
         onSearch={handleSearch}
         categories={categories}
         activeCategory={activeCategory}
@@ -144,9 +179,15 @@ export function Storefront({ onOpenAdmin }: StorefrontProps) {
                 ) : (
                   <>
                     <span className="font-semibold text-foreground">
-                      {products.length}
+                      {filteredProducts.length}
                     </span>{" "}
-                    {products.length === 1 ? "result" : "results"}
+                    {filteredProducts.length === 1 ? "result" : "results"}
+                    {filteredProducts.length !== products.length && (
+                      <span className="text-amber-600">
+                        {" "}
+                        of {products.length}
+                      </span>
+                    )}
                     {searchQuery.trim() && (
                       <>
                         {" "}
@@ -161,6 +202,29 @@ export function Storefront({ onOpenAdmin }: StorefrontProps) {
               </p>
             </div>
             <div className="flex items-center gap-2">
+              {/* Mobile filter trigger */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setMobileFiltersOpen(true)}
+                className="relative lg:hidden"
+              >
+                <Filter size={14} />
+                <span className="ml-1">Filters</span>
+                {(() => {
+                  const n =
+                    (filters.priceMax !== null ? 1 : 0) +
+                    filters.brands.length +
+                    (filters.minRating > 0 ? 1 : 0) +
+                    (filters.inStockOnly ? 1 : 0) +
+                    (filters.onSaleOnly ? 1 : 0);
+                  return n > 0 ? (
+                    <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[9px] font-bold text-white">
+                      {n}
+                    </span>
+                  ) : null;
+                })()}
+              </Button>
               {hasActiveFilter && (
                 <button
                   onClick={handleClear}
@@ -189,12 +253,51 @@ export function Storefront({ onOpenAdmin }: StorefrontProps) {
           </div>
         </div>
 
-        <ProductGrid
-          products={products}
-          loading={loading}
-          onSelect={setSelected}
-          onClear={handleClear}
-        />
+        {/* Body: sidebar filters + grid */}
+        <div className="mx-auto flex max-w-7xl gap-6 px-3 py-6 sm:px-4">
+          {/* Desktop filter sidebar */}
+          <aside className="hidden w-64 shrink-0 lg:block">
+            <div className="sticky top-[170px] rounded-xl border bg-card p-4">
+              {filterContent}
+            </div>
+          </aside>
+
+          {/* Mobile filter sheet */}
+          <Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
+            <SheetContent side="left" className="w-80 p-0 overflow-y-auto">
+              <SheetHeader className="border-b p-4">
+                <SheetTitle className="flex items-center gap-2">
+                  <Filter size={16} className="text-amber-500" />
+                  Filters
+                </SheetTitle>
+                <SheetDescription className="sr-only">
+                  Filter products by price, brand, rating, and availability
+                </SheetDescription>
+              </SheetHeader>
+              <div className="p-4">{filterContent}</div>
+              <div className="border-t p-4">
+                <Button
+                  className="w-full bg-amber-500 text-white hover:bg-amber-600"
+                  onClick={() => setMobileFiltersOpen(false)}
+                >
+                  Show {filteredProducts.length} results
+                </Button>
+              </div>
+            </SheetContent>
+          </Sheet>
+
+          <div className="min-w-0 flex-1">
+            <ProductGrid
+              products={filteredProducts}
+              loading={loading}
+              onSelect={setSelected}
+              onClear={handleClear}
+            />
+          </div>
+        </div>
+
+        {/* Recently viewed rail (only on default home view) */}
+        {showChrome && <RecentlyViewedRail onSelect={setSelected} />}
       </main>
 
       <StoreFooter />
@@ -204,6 +307,11 @@ export function Storefront({ onOpenAdmin }: StorefrontProps) {
         onOpenChange={(o) => !o && setSelected(null)}
       />
       <CartSheet open={cartOpen} onOpenChange={setCartOpen} />
+      <WishlistSheet
+        open={wishlistOpen}
+        onOpenChange={setWishlistOpen}
+        onSelect={setSelected}
+      />
     </div>
   );
 }

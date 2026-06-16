@@ -132,3 +132,65 @@ Work Log:
 
 Stage Summary:
 - ALL golden paths verified in-browser. Username+password admin login confirmed working. Product CRUD confirmed end-to-end (admin ↔ DB ↔ storefront). Sticky footer structure correct. Lint clean. Ready for the recurring improvement cron.
+
+---
+Task ID: 10 (recurring webDevReview — round 1)
+Agent: orchestrator (webDevReview cron)
+Task: Assess project status, perform QA, then add new features + styling improvements.
+
+## 1. Current project status description / assessment
+- Project is a fully-functional Amazon-style affiliate site (Next.js 16 + Prisma + SQLite + shadcn/ui). Storefront + admin panel (username+password login) all working and verified in prior rounds (Tasks 1–8).
+- Ran fresh QA via agent-browser: storefront renders (header, hero, deals, grid, footer), search works, add-to-cart works, product detail dialog works, admin login (admin/admin123) works, product CRUD works, mobile responsive, sticky footer correct. **No bugs found.** Lint clean. Dev log clean (no errors/warnings). Console clean.
+- Conclusion: phase is stable → focus this round on **new features + styling polish** (mandatory requirements).
+
+## 2. Current goals / completed modifications / verification results
+
+### New features added
+1. **Dark/Light theme toggle** — wired up `next-themes` ThemeProvider in `layout.tsx` (was installed but never mounted). Added `ThemeToggle` button (Sun/Moon with CSS-driven crossfade, no hydration flash) to the storefront header. Verified: `document.documentElement.className` flips `light`↔`dark` on click.
+2. **Wishlist** (save/favorite products):
+   - `src/lib/wishlist-store.ts` — Zustand + localStorage persistence (toggle/has/remove/clear/count).
+   - `src/components/storefront/WishlistSheet.tsx` — right-side drawer listing saved items with thumbnail, price, discount %, Add-to-cart, Remove, Clear, empty state.
+   - Heart button on every `ProductCard` (bottom-right of image, fills rose when saved) + "Save"/"Saved" button in `ProductDetailDialog`.
+   - Heart button with live count badge in `StoreHeader` (rose badge).
+   - Verified: heart click → wishlist badge 1 → sheet opens showing item → toast "Saved to wishlist".
+3. **Advanced product filters** — `src/components/storefront/FilterPanel.tsx`:
+   - Max-price slider, minimum-rating selector (4+/3+/2+/any), brand checkboxes (all 12 brands auto-detected), in-stock-only + on-sale-only toggles, active-filter chips, clear-all button.
+   - Desktop: sticky left sidebar (lg+). Mobile: trigger button with active-count badge → left Sheet with "Show N results" button.
+   - Client-side `applyFilters()` composes with server-side search/category/sort.
+   - Verified: "On sale only" → 10 of 12; brand "PowerCore" → 1 of 12; toolbar shows "N results of M" when filtering.
+4. **Recently-viewed rail** — `src/lib/recently-viewed-store.ts` (Zustand + localStorage, max 10) + `src/components/storefront/RecentlyViewedRail.tsx` (horizontal scroller). `ProductDetailDialog` pushes to recently-viewed on open. Rail shows below the product grid on the home view. Verified: opening a product → "Recently Viewed" rail appears with that product.
+
+### Styling improvements
+- **ProductDetailDialog**: added a 3-column trust-badges strip (Free Shipping / 30-Day Returns / Secure Partner) with amber/emerald/violet icons; added a Save/Saved wishlist button alongside Add-to-Cart + Buy Now.
+- **ProductCard**: wishlist heart overlay (bottom-right, scales on hover, fills rose when active).
+- **StoreHeader**: theme toggle + wishlist button (rose badge) integrated into the dark-zinc bar; refined action layout.
+- **Filter sidebar**: polished panel with section separators, uppercase labels, amber-themed slider/checkboxes, active-count badge on mobile trigger.
+- **Toolbar**: shows "N results of M" when filters reduce the count (amber accent).
+- Updated `layout.tsx` metadata to "ShopAffiliate — Earn While You Shop" branding.
+
+### Files created
+- `src/components/theme-provider.tsx`, `src/components/theme-toggle.tsx`
+- `src/lib/wishlist-store.ts`, `src/lib/recently-viewed-store.ts`
+- `src/components/storefront/WishlistSheet.tsx`, `src/components/storefront/RecentlyViewedRail.tsx`, `src/components/storefront/FilterPanel.tsx`
+
+### Files modified
+- `src/app/layout.tsx` (ThemeProvider + metadata), `src/components/storefront/Storefront.tsx` (wired wishlist/recently-viewed/filters + sidebar layout), `src/components/storefront/StoreHeader.tsx` (theme + wishlist buttons), `src/components/storefront/ProductCard.tsx` (heart), `src/components/storefront/ProductDetailDialog.tsx` (wishlist + trust badges + recently-viewed tracking)
+
+### Verification
+- `bun run lint` → 0 errors, 0 warnings.
+- Dev server compiles clean; dev.log shows no errors/warnings; agent-browser console clean.
+- agent-browser verified: theme toggle, wishlist add/open, filters (on-sale 10/12, brand 1/12), product detail trust badges + save button, recently-viewed rail, mobile filter sheet. Screenshots saved to /tmp/qa-*.png.
+
+## 3. Unresolved issues / risks + next-phase recommendations
+- **No open bugs.** All new features verified working.
+- Minor note: Radix Checkbox toggling via agent-browser click can require a JS-level click (label-overlay quirk) — this is a test-automation nuance, not a user-facing bug (real clicks work fine).
+- **Recommended next-phase work** (in priority order):
+  1. Product detail: image gallery with thumbnails (parse `images` JSON array), tabbed specs/reviews section.
+  2. Admin: leverage the currently-unused `Order` model — add an Orders section + revenue chart; per-product click detail page.
+  3. Storefront: "Compare" feature (side-by-side 2–3 products); price-drop toast when a product's price decreased.
+  4. Admin: bulk product actions (select-all + bulk delete/feature/category-assign); CSV import/export.
+  5. Auth: add a second admin user + change-password flow in the admin panel.
+  6. SEO: add per-category landing content + Open Graph images generated from product imagery.
+
+Stage Summary:
+- Round 1 of recurring webDevReview complete. Added 4 new user-facing features (theme toggle, wishlist, advanced filters, recently-viewed) + styling polish (trust badges, refined cards/header/toolbar). All verified via agent-browser. Lint clean. Project remains stable and ready for the next round.

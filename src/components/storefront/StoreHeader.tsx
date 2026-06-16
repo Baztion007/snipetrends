@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ShoppingBag, Search, User, ShoppingCart } from "lucide-react";
+import { ShoppingBag, Search, User, ShoppingCart, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,6 +12,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCart } from "@/lib/cart-store";
+import { useWishlist } from "@/lib/wishlist-store";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
 import type { Category } from "@/lib/types";
 
@@ -20,6 +22,7 @@ export const DEALS_SENTINEL = "__deals__";
 interface StoreHeaderProps {
   onOpenAdmin: () => void;
   onOpenCart: () => void;
+  onOpenWishlist: () => void;
   onSearch: (q: string) => void;
   categories: Category[];
   activeCategory: string | null;
@@ -29,6 +32,7 @@ interface StoreHeaderProps {
 export function StoreHeader({
   onOpenAdmin,
   onOpenCart,
+  onOpenWishlist,
   onSearch,
   categories,
   activeCategory,
@@ -36,6 +40,7 @@ export function StoreHeader({
 }: StoreHeaderProps) {
   const [q, setQ] = useState("");
   const count = useCart((s) => s.totalItems());
+  const wishCount = useWishlist((s) => s.count());
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,6 +120,21 @@ export function StoreHeader({
 
           {/* Actions */}
           <div className="ml-auto flex items-center gap-1 sm:gap-2">
+            <ThemeToggle />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onOpenWishlist}
+              className="relative h-10 w-10 text-zinc-100 hover:bg-zinc-800 hover:text-white"
+              aria-label={`Wishlist with ${wishCount} ${wishCount === 1 ? "item" : "items"}`}
+            >
+              <Heart size={20} />
+              {wishCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
+                  {wishCount > 99 ? "99+" : wishCount}
+                </span>
+              )}
+            </Button>
             <Button
               variant="ghost"
               size="sm"
