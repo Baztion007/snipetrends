@@ -6,6 +6,7 @@ import {
   Package,
   Tags,
   BarChart3,
+  ShoppingCart,
   LogOut,
   Store,
   ShieldCheck,
@@ -23,7 +24,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { AdminUser } from "./AdminLogin";
 
-export type AdminSection = "dashboard" | "products" | "categories" | "analytics";
+export type AdminSection = "dashboard" | "products" | "orders" | "categories" | "analytics";
 
 interface AdminShellProps {
   user: AdminUser;
@@ -36,6 +37,7 @@ interface AdminShellProps {
 
 const NAV: { id: AdminSection; label: string; icon: typeof Package }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { id: "orders", label: "Orders", icon: ShoppingCart },
   { id: "products", label: "Products", icon: Package },
   { id: "categories", label: "Categories", icon: Tags },
   { id: "analytics", label: "Analytics", icon: BarChart3 },

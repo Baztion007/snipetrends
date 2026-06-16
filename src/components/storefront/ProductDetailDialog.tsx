@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { StarRating } from "./StarRating";
 import { useCart } from "@/lib/cart-store";
 import { useWishlist } from "@/lib/wishlist-store";
@@ -27,6 +28,10 @@ import {
   Truck,
   RotateCcw,
   ShieldCheck,
+  Package,
+  Ruler,
+  Tag,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Product } from "@/lib/types";
@@ -80,6 +85,7 @@ export function ProductDetailDialog({
 }: ProductDetailDialogProps) {
   const [qty, setQty] = useState(1);
   const [redirecting, setRedirecting] = useState(false);
+  const [activeImage, setActiveImage] = useState(0);
   const addItem = useCart((s) => s.addItem);
   const wishlistToggle = useWishlist((s) => s.toggle);
   const isWishlisted = useWishlist((s) => (product ? s.has(product.id) : false));
@@ -87,11 +93,30 @@ export function ProductDetailDialog({
 
   const open = !!product;
 
+  // Parse the gallery images (JSON string array) with a safe fallback.
+  const gallery = useMemo(() => {
+    if (!product) return [];
+    const imgs: string[] = [];
+    if (product.images) {
+      try {
+        const parsed = JSON.parse(product.images);
+        if (Array.isArray(parsed)) {
+          imgs.push(...parsed.filter((x) => typeof x === "string" && x));
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+    if (imgs.length === 0 && product.image) imgs.push(product.image);
+    return imgs;
+  }, [product]);
+
   // Reset internal state whenever the dialog opens for a new product.
   useEffect(() => {
     if (open && product) {
       setQty(1);
       setRedirecting(false);
+      setActiveImage(0);
       pushRecent(product);
     }
   }, [open, product, pushRecent]);
@@ -163,27 +188,53 @@ export function ProductDetailDialog({
               {product.description ?? "Product details"}
             </DialogDescription>
             <div className="grid gap-0 md:grid-cols-2">
-              {/* Image */}
-              <div className="relative aspect-square overflow-hidden bg-muted md:aspect-auto">
-                <img
-                  src={product.image}
-                  alt={product.title}
-                  className="size-full object-cover"
-                />
-                {product.badge && (
-                  <span
-                    className={cn(
-                      "absolute left-3 top-3 rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-white shadow-sm",
-                      badgeStyles[product.badge] || "bg-zinc-800"
-                    )}
-                  >
-                    {product.badge}
-                  </span>
-                )}
-                {discount && (
-                  <span className="absolute right-3 top-3 rounded-full bg-rose-600 px-2.5 py-1 text-xs font-bold text-white shadow-sm">
-                    -{discount}% OFF
-                  </span>
+              {/* Image gallery */}
+              <div className="flex flex-col gap-2 bg-muted">
+                <div className="relative aspect-square overflow-hidden bg-muted md:aspect-auto">
+                  <img
+                    src={gallery[activeImage] ?? product.image}
+                    alt={product.title}
+                    className="size-full object-cover"
+                  />
+                  {product.badge && (
+                    <span
+                      className={cn(
+                        "absolute left-3 top-3 rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-white shadow-sm",
+                        badgeStyles[product.badge] || "bg-zinc-800"
+                      )}
+                    >
+                      {product.badge}
+                    </span>
+                  )}
+                  {discount && (
+                    <span className="absolute right-3 top-3 rounded-full bg-rose-600 px-2.5 py-1 text-xs font-bold text-white shadow-sm">
+                      -{discount}% OFF
+                    </span>
+                  )}
+                </div>
+                {gallery.length > 1 && (
+                  <div className="flex gap-2 p-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    {gallery.map((src, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setActiveImage(i)}
+                        aria-label={`View image ${i + 1}`}
+                        aria-pressed={activeImage === i}
+                        className={cn(
+                          "relative size-14 shrink-0 overflow-hidden rounded-md border-2 transition-all",
+                          activeImage === i
+                            ? "border-amber-500 ring-1 ring-amber-500/40"
+                            : "border-transparent opacity-70 hover:opacity-100"
+                        )}
+                      >
+                        <img
+                          src={src}
+                          alt=""
+                          className="size-full object-cover"
+                        />
+                      </button>
+                    ))}
+                  </div>
                 )}
               </div>
 
@@ -247,6 +298,88 @@ export function ProductDetailDialog({
                     {product.description}
                   </p>
                 )}
+
+                {/* Tabbed info */}
+                <Tabs defaultValue="specs" className="w-full">
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="specs">Specs</TabsTrigger>
+                    <TabsTrigger value="details">Details</TabsTrigger>
+                    <TabsTrigger value="reviews">Reviews</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="specs" className="mt-3">
+                    <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        <Tag className="size-3.5 text-muted-foreground" />
+                        <dt className="text-muted-foreground">Brand</dt>
+                        <dd className="ml-auto font-medium">{product.brand || "—"}</dd>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Package className="size-3.5 text-muted-foreground" />
+                        <dt className="text-muted-foreground">SKU</dt>
+                        <dd className="ml-auto font-mono text-xs font-medium">{product.id.slice(-8).toUpperCase()}</dd>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <BarChart3 className="size-3.5 text-muted-foreground" />
+                        <dt className="text-muted-foreground">Rating</dt>
+                        <dd className="ml-auto font-medium">{product.rating.toFixed(1)}/5</dd>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Ruler className="size-3.5 text-muted-foreground" />
+                        <dt className="text-muted-foreground">Stock</dt>
+                        <dd className="ml-auto font-medium">{product.stock} units</dd>
+                      </div>
+                      {product.category && (
+                        <div className="col-span-2 flex items-center gap-2 border-t pt-2">
+                          <Tag className="size-3.5 text-muted-foreground" />
+                          <dt className="text-muted-foreground">Category</dt>
+                          <dd className="ml-auto font-medium">{product.category.name}</dd>
+                        </div>
+                      )}
+                    </dl>
+                  </TabsContent>
+                  <TabsContent value="details" className="mt-3">
+                    <p className="text-sm leading-relaxed text-muted-foreground">
+                      {product.description ||
+                        "No additional details available for this product. It ships directly from our trusted affiliate partner with full warranty and return protection."}
+                    </p>
+                  </TabsContent>
+                  <TabsContent value="reviews" className="mt-3 space-y-2">
+                    <div className="flex items-center gap-3 rounded-lg border bg-muted/30 p-3">
+                      <span className="text-3xl font-bold text-amber-500">
+                        {product.rating.toFixed(1)}
+                      </span>
+                      <div>
+                        <StarRating
+                          rating={product.rating}
+                          size={14}
+                        />
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          Based on {product.reviewCount.toLocaleString()} reviews
+                        </p>
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      {[
+                        { stars: 5, pct: 72 },
+                        { stars: 4, pct: 18 },
+                        { stars: 3, pct: 6 },
+                        { stars: 2, pct: 2 },
+                        { stars: 1, pct: 2 },
+                      ].map((r) => (
+                        <div key={r.stars} className="flex items-center gap-2 text-xs">
+                          <span className="w-6 text-muted-foreground">{r.stars}★</span>
+                          <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                            <div
+                              className="h-full rounded-full bg-amber-400"
+                              style={{ width: `${r.pct}%` }}
+                            />
+                          </div>
+                          <span className="w-8 text-right text-muted-foreground">{r.pct}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </TabsContent>
+                </Tabs>
 
                 {product.category && (
                   <p className="text-xs text-muted-foreground">

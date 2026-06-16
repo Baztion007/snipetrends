@@ -10,11 +10,20 @@ import {
   DollarSign,
   TrendingUp,
   Crown,
+  ShoppingCart,
+  Receipt,
+  Boxes,
 } from "lucide-react";
 import {
   Area,
   AreaChart,
+  Bar,
+  BarChart,
   CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  Legend,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -32,8 +41,16 @@ interface DashboardData {
     featuredCount: number;
     lowStock: number;
     catalogValue: number;
+    totalOrders: number;
+    completedOrders: number;
+    pendingOrders: number;
+    cancelledOrders: number;
+    totalRevenue: number;
+    totalUnitsSold: number;
   };
   clicksPerDay: { date: string; count: number }[];
+  revenuePerDay: { date: string; revenue: number; orders: number }[];
+  orderStatus: { name: string; value: number; color: string }[];
   topProducts: {
     id: string;
     title: string;
@@ -47,12 +64,14 @@ function KpiCard({
   icon: Icon,
   label,
   value,
+  sub,
   tint,
   loading,
 }: {
   icon: typeof Package;
   label: string;
   value: string;
+  sub?: string;
   tint: "amber" | "emerald" | "rose" | "violet" | "sky" | "zinc";
   loading?: boolean;
 }) {
@@ -65,7 +84,7 @@ function KpiCard({
     zinc: "bg-zinc-500/10 text-zinc-500",
   };
   return (
-    <Card className="overflow-hidden border-border/60 shadow-sm">
+    <Card className="overflow-hidden border-border/60 shadow-sm transition-shadow hover:shadow-md">
       <CardContent className="p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -78,6 +97,9 @@ function KpiCard({
               <p className="mt-1.5 text-2xl font-bold tracking-tight truncate">
                 {value}
               </p>
+            )}
+            {sub && !loading && (
+              <p className="mt-0.5 text-xs text-muted-foreground truncate">{sub}</p>
             )}
           </div>
           <div
@@ -138,7 +160,47 @@ export function DashboardSection() {
         </Card>
       )}
 
-      {/* KPI grid */}
+      {/* Revenue + Orders KPIs (top row, highlighted) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <KpiCard
+          icon={DollarSign}
+          label="Revenue"
+          value={data ? formatPrice(data.stats.totalRevenue) : ""}
+          sub={data ? `${data.stats.completedOrders} completed orders` : ""}
+          tint="emerald"
+          loading={loading}
+        />
+        <KpiCard
+          icon={ShoppingCart}
+          label="Total Orders"
+          value={data ? String(data.stats.totalOrders) : ""}
+          sub={data ? `${data.stats.pendingOrders} pending` : ""}
+          tint="amber"
+          loading={loading}
+        />
+        <KpiCard
+          icon={Boxes}
+          label="Units Sold"
+          value={data ? String(data.stats.totalUnitsSold) : ""}
+          sub="from completed orders"
+          tint="violet"
+          loading={loading}
+        />
+        <KpiCard
+          icon={Receipt}
+          label="Avg Order Value"
+          value={
+            data && data.stats.completedOrders > 0
+              ? formatPrice(data.stats.totalRevenue / data.stats.completedOrders)
+              : "—"
+          }
+          sub="per completed order"
+          tint="sky"
+          loading={loading}
+        />
+      </div>
+
+      {/* Catalog KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
         <KpiCard
           icon={Package}
@@ -184,8 +246,124 @@ export function DashboardSection() {
         />
       </div>
 
+      {/* Revenue chart + Order status pie */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Clicks chart */}
+        <Card className="lg:col-span-2 border-border/60">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <DollarSign className="h-4 w-4 text-emerald-500" />
+              Revenue · Last 14 Days
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <Skeleton className="h-[260px] w-full" />
+            ) : (
+              <ResponsiveContainer width="100%" height={260}>
+                <AreaChart
+                  data={data?.revenuePerDay ?? []}
+                  margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+                >
+                  <defs>
+                    <linearGradient id="revFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="hsl(var(--border) / 0.5)"
+                    vertical={false}
+                  />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                    tickFormatter={(d: string) => d.slice(5)}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(v: number) => `$${v >= 1000 ? (v / 1000).toFixed(1) + "k" : v}`}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: 10,
+                      border: "1px solid hsl(var(--border))",
+                      background: "hsl(var(--popover))",
+                      color: "hsl(var(--popover-foreground))",
+                      fontSize: 12,
+                    }}
+                    formatter={(v: number) => [formatPrice(v), "Revenue"]}
+                    labelFormatter={(d: string) => d}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="revenue"
+                    stroke="#10b981"
+                    strokeWidth={2.5}
+                    fill="url(#revFill)"
+                    dot={false}
+                    activeDot={{ r: 4, fill: "#10b981" }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Order status pie */}
+        <Card className="border-border/60">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Receipt className="h-4 w-4 text-amber-500" />
+              Order Status
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <Skeleton className="h-[260px] w-full" />
+            ) : (
+              <ResponsiveContainer width="100%" height={260}>
+                <PieChart>
+                  <Pie
+                    data={data?.orderStatus ?? []}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="45%"
+                    innerRadius={50}
+                    outerRadius={80}
+                    paddingAngle={3}
+                  >
+                    {(data?.orderStatus ?? []).map((entry, i) => (
+                      <Cell key={i} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: 10,
+                      border: "1px solid hsl(var(--border))",
+                      background: "hsl(var(--popover))",
+                      color: "hsl(var(--popover-foreground))",
+                      fontSize: 12,
+                    }}
+                  />
+                  <Legend
+                    iconType="circle"
+                    wrapperStyle={{ fontSize: 12, paddingTop: 10 }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Clicks chart + Top products */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2 border-border/60">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
@@ -195,19 +373,13 @@ export function DashboardSection() {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <Skeleton className="h-[260px] w-full" />
+              <Skeleton className="h-[240px] w-full" />
             ) : (
-              <ResponsiveContainer width="100%" height={260}>
-                <AreaChart
+              <ResponsiveContainer width="100%" height={240}>
+                <BarChart
                   data={data?.clicksPerDay ?? []}
                   margin={{ top: 10, right: 10, left: -18, bottom: 0 }}
                 >
-                  <defs>
-                    <linearGradient id="clickFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
                   <CartesianGrid
                     strokeDasharray="3 3"
                     stroke="hsl(var(--border) / 0.5)"
@@ -234,18 +406,10 @@ export function DashboardSection() {
                       color: "hsl(var(--popover-foreground))",
                       fontSize: 12,
                     }}
-                    labelFormatter={(d: string) => d}
+                    cursor={{ fill: "hsl(var(--muted) / 0.4)" }}
                   />
-                  <Area
-                    type="monotone"
-                    dataKey="count"
-                    stroke="#f59e0b"
-                    strokeWidth={2.5}
-                    fill="url(#clickFill)"
-                    dot={false}
-                    activeDot={{ r: 4, fill: "#f59e0b" }}
-                  />
-                </AreaChart>
+                  <Bar dataKey="count" radius={[6, 6, 0, 0]} maxBarSize={32} fill="#f59e0b" />
+                </BarChart>
               </ResponsiveContainer>
             )}
             <p className="mt-2 text-xs text-muted-foreground">
@@ -254,7 +418,6 @@ export function DashboardSection() {
           </CardContent>
         </Card>
 
-        {/* Top products */}
         <Card className="border-border/60">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
@@ -272,10 +435,7 @@ export function DashboardSection() {
             ) : data?.topProducts.length ? (
               <ul className="space-y-3">
                 {data.topProducts.map((p, i) => (
-                  <li
-                    key={p.id}
-                    className="flex items-center gap-3"
-                  >
+                  <li key={p.id} className="flex items-center gap-3">
                     <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-amber-500/15 text-xs font-bold text-amber-600">
                       {i + 1}
                     </span>

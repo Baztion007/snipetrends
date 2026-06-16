@@ -10,6 +10,8 @@ import { ProductDetailDialog } from "./ProductDetailDialog";
 import { CartSheet } from "./CartSheet";
 import { WishlistSheet } from "./WishlistSheet";
 import { RecentlyViewedRail } from "./RecentlyViewedRail";
+import { CompareBar } from "./CompareBar";
+import { CompareSheet } from "./CompareSheet";
 import {
   FilterPanel,
   applyFilters,
@@ -55,6 +57,7 @@ export function Storefront({ onOpenAdmin }: StorefrontProps) {
   const [selected, setSelected] = useState<Product | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
   const [wishlistOpen, setWishlistOpen] = useState(false);
+  const [compareOpen, setCompareOpen] = useState(false);
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
@@ -310,6 +313,12 @@ export function Storefront({ onOpenAdmin }: StorefrontProps) {
       <WishlistSheet
         open={wishlistOpen}
         onOpenChange={setWishlistOpen}
+        onSelect={setSelected}
+      />
+      <CompareBar onOpen={() => setCompareOpen(true)} />
+      <CompareSheet
+        open={compareOpen}
+        onOpenChange={setCompareOpen}
         onSelect={setSelected}
       />
     </div>

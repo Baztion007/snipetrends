@@ -1,12 +1,13 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ShoppingCart, Eye, Heart } from "lucide-react";
+import { ShoppingCart, Eye, Heart, GitCompareArrows } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { StarRating } from "./StarRating";
 import { useCart } from "@/lib/cart-store";
 import { useWishlist } from "@/lib/wishlist-store";
+import { useCompare, COMPARE_MAX } from "@/lib/compare-store";
 import { formatPrice, discountPercent } from "@/lib/format";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -27,6 +28,9 @@ export function ProductCard({ product, onSelect }: ProductCardProps) {
   const addItem = useCart((s) => s.addItem);
   const wishlistToggle = useWishlist((s) => s.toggle);
   const isWishlisted = useWishlist((s) => s.has(product.id));
+  const compareToggle = useCompare((s) => s.toggle);
+  const isInCompare = useCompare((s) => s.has(product.id));
+  const compareFull = useCompare((s) => s.isFull());
   const discount = discountPercent(product.price, product.compareAtPrice);
   const outOfStock = product.stock <= 0;
 
@@ -42,6 +46,20 @@ export function ProductCard({ product, onSelect }: ProductCardProps) {
     const wasIn = isWishlisted;
     wishlistToggle(product);
     toast(wasIn ? "Removed from wishlist" : "Saved to wishlist", {
+      description: product.title,
+    });
+  };
+
+  const handleCompare = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (compareFull && !isInCompare) {
+      toast.error(`Compare is full`, {
+        description: `You can compare up to ${COMPARE_MAX} products at a time.`,
+      });
+      return;
+    }
+    compareToggle(product);
+    toast(isInCompare ? "Removed from compare" : "Added to compare", {
       description: product.title,
     });
   };
@@ -163,6 +181,19 @@ export function ProductCard({ product, onSelect }: ProductCardProps) {
               aria-label={`View ${product.title} details`}
             >
               <Eye size={14} />
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleCompare}
+              className={cn(
+                "h-9 w-9 px-0",
+                isInCompare && "border-amber-500 bg-amber-500/10 text-amber-600 hover:bg-amber-500/20"
+              )}
+              aria-label={`${isInCompare ? "Remove from" : "Add to"} compare`}
+              aria-pressed={isInCompare}
+            >
+              <GitCompareArrows size={14} />
             </Button>
           </div>
         </div>
