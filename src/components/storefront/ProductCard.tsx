@@ -1,13 +1,13 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ShoppingCart, Eye, Heart, GitCompareArrows } from "lucide-react";
+import { Eye, Heart, GitCompareArrows, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { StarRating } from "./StarRating";
-import { useCart } from "@/lib/cart-store";
 import { useWishlist } from "@/lib/wishlist-store";
 import { useCompare, COMPARE_MAX } from "@/lib/compare-store";
+import { redirectToPartner } from "@/lib/affiliate";
 import { formatPrice, discountPercent } from "@/lib/format";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -25,7 +25,6 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, onSelect }: ProductCardProps) {
-  const addItem = useCart((s) => s.addItem);
   const wishlistToggle = useWishlist((s) => s.toggle);
   const isWishlisted = useWishlist((s) => s.has(product.id));
   const compareToggle = useCompare((s) => s.toggle);
@@ -34,11 +33,9 @@ export function ProductCard({ product, onSelect }: ProductCardProps) {
   const discount = discountPercent(product.price, product.compareAtPrice);
   const outOfStock = product.stock <= 0;
 
-  const handleAdd = (e: React.MouseEvent) => {
+  const handleViewOnAmazon = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (outOfStock) return;
-    addItem(product, 1);
-    toast.success("Added to cart", { description: product.title });
+    redirectToPartner(product);
   };
 
   const handleWishlist = (e: React.MouseEvent) => {
@@ -166,12 +163,11 @@ export function ProductCard({ product, onSelect }: ProductCardProps) {
           <div className="flex items-center gap-2 pt-1.5">
             <Button
               size="sm"
-              onClick={handleAdd}
-              disabled={outOfStock}
+              onClick={handleViewOnAmazon}
               className="h-9 flex-1 gap-1.5 bg-amber-500 text-white hover:bg-amber-600"
             >
-              <ShoppingCart size={14} />
-              Add to cart
+              <ExternalLink size={14} />
+              View on Amazon
             </Button>
             <Button
               size="sm"

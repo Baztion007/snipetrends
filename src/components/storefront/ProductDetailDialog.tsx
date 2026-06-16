@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,15 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { StarRating } from "./StarRating";
-import { useCart } from "@/lib/cart-store";
 import { useWishlist } from "@/lib/wishlist-store";
 import { useRecentlyViewed } from "@/lib/recently-viewed-store";
+import { redirectToPartner } from "@/lib/affiliate";
 import { formatPrice, discountPercent } from "@/lib/format";
 import { toast } from "sonner";
 import {
-  Minus,
-  Plus,
-  ShoppingCart,
   ExternalLink,
   Check,
   AlertTriangle,
@@ -32,6 +29,7 @@ import {
   Ruler,
   Tag,
   BarChart3,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Product } from "@/lib/types";
@@ -83,40 +81,16 @@ export function ProductDetailDialog({
   product,
   onOpenChange,
 }: ProductDetailDialogProps) {
-  const [qty, setQty] = useState(1);
   const [redirecting, setRedirecting] = useState(false);
-  const [activeImage, setActiveImage] = useState(0);
-  const addItem = useCart((s) => s.addItem);
   const wishlistToggle = useWishlist((s) => s.toggle);
   const isWishlisted = useWishlist((s) => (product ? s.has(product.id) : false));
   const pushRecent = useRecentlyViewed((s) => s.push);
 
   const open = !!product;
 
-  // Parse the gallery images (JSON string array) with a safe fallback.
-  const gallery = useMemo(() => {
-    if (!product) return [];
-    const imgs: string[] = [];
-    if (product.images) {
-      try {
-        const parsed = JSON.parse(product.images);
-        if (Array.isArray(parsed)) {
-          imgs.push(...parsed.filter((x) => typeof x === "string" && x));
-        }
-      } catch {
-        /* ignore */
-      }
-    }
-    if (imgs.length === 0 && product.image) imgs.push(product.image);
-    return imgs;
-  }, [product]);
-
-  // Reset internal state whenever the dialog opens for a new product.
+  // Track recently-viewed when a product is opened (external store write only).
   useEffect(() => {
     if (open && product) {
-      setQty(1);
-      setRedirecting(false);
-      setActiveImage(0);
       pushRecent(product);
     }
   }, [open, product, pushRecent]);
@@ -125,38 +99,11 @@ export function ProductDetailDialog({
     ? discountPercent(product.price, product.compareAtPrice)
     : null;
 
-  const handleAdd = () => {
-    if (!product) return;
-    addItem(product, qty);
-    toast.success("Added to cart", {
-      description: `${qty} × ${product.title}`,
-    });
-  };
-
-  const handleBuyNow = async () => {
+  const handleViewOnAmazon = async () => {
     if (!product) return;
     setRedirecting(true);
-    try {
-      const res = await fetch("/api/track-click", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId: product.id }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data?.error || "Failed to track click");
-      }
-      toast.success("Redirecting to our partner…", {
-        description: "Opening the affiliate store in a new tab.",
-      });
-      window.open(data.affiliateUrl, "_blank", "noopener,noreferrer");
-    } catch {
-      toast.error("Could not redirect", {
-        description: "Please try again in a moment.",
-      });
-    } finally {
-      setRedirecting(false);
-    }
+    await redirectToPartner(product);
+    setRedirecting(false);
   };
 
   const handleWishlist = () => {
@@ -167,8 +114,6 @@ export function ProductDetailDialog({
       description: product.title,
     });
   };
-
-  const maxQty = product ? Math.max(1, product.stock || 99) : 99;
 
   return (
     <Dialog
@@ -188,55 +133,12 @@ export function ProductDetailDialog({
               {product.description ?? "Product details"}
             </DialogDescription>
             <div className="grid gap-0 md:grid-cols-2">
-              {/* Image gallery */}
-              <div className="flex flex-col gap-2 bg-muted">
-                <div className="relative aspect-square overflow-hidden bg-muted md:aspect-auto">
-                  <img
-                    src={gallery[activeImage] ?? product.image}
-                    alt={product.title}
-                    className="size-full object-cover"
-                  />
-                  {product.badge && (
-                    <span
-                      className={cn(
-                        "absolute left-3 top-3 rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-white shadow-sm",
-                        badgeStyles[product.badge] || "bg-zinc-800"
-                      )}
-                    >
-                      {product.badge}
-                    </span>
-                  )}
-                  {discount && (
-                    <span className="absolute right-3 top-3 rounded-full bg-rose-600 px-2.5 py-1 text-xs font-bold text-white shadow-sm">
-                      -{discount}% OFF
-                    </span>
-                  )}
-                </div>
-                {gallery.length > 1 && (
-                  <div className="flex gap-2 p-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                    {gallery.map((src, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setActiveImage(i)}
-                        aria-label={`View image ${i + 1}`}
-                        aria-pressed={activeImage === i}
-                        className={cn(
-                          "relative size-14 shrink-0 overflow-hidden rounded-md border-2 transition-all",
-                          activeImage === i
-                            ? "border-amber-500 ring-1 ring-amber-500/40"
-                            : "border-transparent opacity-70 hover:opacity-100"
-                        )}
-                      >
-                        <img
-                          src={src}
-                          alt=""
-                          className="size-full object-cover"
-                        />
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              {/* Image gallery (keyed so activeImage resets per product) */}
+              <ProductGallery
+                key={product.id}
+                product={product}
+                discount={discount}
+              />
 
               {/* Details */}
               <div className="flex max-h-[80vh] flex-col gap-3 overflow-y-auto p-5">
@@ -390,58 +292,19 @@ export function ProductDetailDialog({
                   </p>
                 )}
 
-                {/* Quantity selector */}
-                <div className="flex items-center gap-3 pt-1">
-                  <span className="text-sm font-medium">Quantity</span>
-                  <div className="flex items-center rounded-md border">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => setQty((q) => Math.max(1, q - 1))}
-                      disabled={qty <= 1}
-                      aria-label="Decrease quantity"
-                    >
-                      <Minus size={14} />
-                    </Button>
-                    <span
-                      className="w-8 text-center text-sm font-semibold"
-                      aria-live="polite"
-                    >
-                      {qty}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() =>
-                        setQty((q) => Math.min(maxQty, q + 1))
-                      }
-                      disabled={qty >= maxQty}
-                      aria-label="Increase quantity"
-                    >
-                      <Plus size={14} />
-                    </Button>
-                  </div>
-                </div>
-
                 {/* Actions */}
                 <div className="flex flex-col gap-2 pt-4 sm:flex-row">
                   <Button
-                    onClick={handleAdd}
-                    disabled={product.stock <= 0}
-                    className="h-11 flex-1 gap-2 bg-amber-500 text-white hover:bg-amber-600"
+                    onClick={handleViewOnAmazon}
+                    disabled={redirecting}
+                    className="h-11 flex-1 gap-2 bg-amber-500 text-zinc-950 hover:bg-amber-400 shadow-lg shadow-amber-500/20"
                   >
-                    <ShoppingCart size={16} />
-                    Add to Cart
-                  </Button>
-                  <Button
-                    onClick={handleBuyNow}
-                    disabled={product.stock <= 0 || redirecting}
-                    className="h-11 flex-1 gap-2 bg-emerald-600 text-white hover:bg-emerald-700"
-                  >
-                    <ExternalLink size={16} />
-                    {redirecting ? "Redirecting…" : "Buy Now via Partner"}
+                    {redirecting ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <ExternalLink size={16} />
+                    )}
+                    {redirecting ? "Opening on Amazon…" : "View on Amazon"}
                   </Button>
                   <Button
                     onClick={handleWishlist}
@@ -464,15 +327,15 @@ export function ProductDetailDialog({
                 <div className="mt-3 grid grid-cols-3 gap-2 rounded-lg border bg-muted/30 p-3 text-center">
                   <div className="flex flex-col items-center gap-1">
                     <Truck className="size-5 text-amber-500" />
-                    <span className="text-[11px] font-medium leading-tight">Free Shipping</span>
+                    <span className="text-[11px] font-medium leading-tight">Ships from Amazon</span>
                   </div>
                   <div className="flex flex-col items-center gap-1">
                     <RotateCcw className="size-5 text-emerald-500" />
-                    <span className="text-[11px] font-medium leading-tight">30-Day Returns</span>
+                    <span className="text-[11px] font-medium leading-tight">Amazon Returns</span>
                   </div>
                   <div className="flex flex-col items-center gap-1">
                     <ShieldCheck className="size-5 text-violet-500" />
-                    <span className="text-[11px] font-medium leading-tight">Secure Partner</span>
+                    <span className="text-[11px] font-medium leading-tight">Secure Checkout</span>
                   </div>
                 </div>
               </div>
@@ -481,5 +344,80 @@ export function ProductDetailDialog({
         )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** Image gallery with thumbnail switcher. Keyed by product id in the parent so
+ *  its internal activeImage state resets when switching products. */
+function ProductGallery({
+  product,
+  discount,
+}: {
+  product: Product;
+  discount: number | null;
+}) {
+  const [activeImage, setActiveImage] = useState(0);
+
+  const gallery: string[] = (() => {
+    const imgs: string[] = [];
+    if (product.images) {
+      try {
+        const parsed = JSON.parse(product.images);
+        if (Array.isArray(parsed)) {
+          imgs.push(...parsed.filter((x) => typeof x === "string" && x));
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+    if (imgs.length === 0 && product.image) imgs.push(product.image);
+    return imgs;
+  })();
+
+  return (
+    <div className="flex flex-col gap-2 bg-muted">
+      <div className="relative aspect-square overflow-hidden bg-muted md:aspect-auto">
+        <img
+          src={gallery[activeImage] ?? product.image}
+          alt={product.title}
+          className="size-full object-cover"
+        />
+        {product.badge && (
+          <span
+            className={cn(
+              "absolute left-3 top-3 rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-white shadow-sm",
+              badgeStyles[product.badge] || "bg-zinc-800"
+            )}
+          >
+            {product.badge}
+          </span>
+        )}
+        {discount && (
+          <span className="absolute right-3 top-3 rounded-full bg-rose-600 px-2.5 py-1 text-xs font-bold text-white shadow-sm">
+            -{discount}% OFF
+          </span>
+        )}
+      </div>
+      {gallery.length > 1 && (
+        <div className="flex gap-2 p-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {gallery.map((src, i) => (
+            <button
+              key={i}
+              onClick={() => setActiveImage(i)}
+              aria-label={`View image ${i + 1}`}
+              aria-pressed={activeImage === i}
+              className={cn(
+                "relative size-14 shrink-0 overflow-hidden rounded-md border-2 transition-all",
+                activeImage === i
+                  ? "border-amber-500 ring-1 ring-amber-500/40"
+                  : "border-transparent opacity-70 hover:opacity-100"
+              )}
+            >
+              <img src={src} alt="" className="size-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

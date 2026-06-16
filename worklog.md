@@ -194,3 +194,44 @@ Task: Assess project status, perform QA, then add new features + styling improve
 
 Stage Summary:
 - Round 1 of recurring webDevReview complete. Added 4 new user-facing features (theme toggle, wishlist, advanced filters, recently-viewed) + styling polish (trust badges, refined cards/header/toolbar). All verified via agent-browser. Lint clean. Project remains stable and ready for the next round.
+
+---
+Task ID: 11 (user correction — remove e-commerce features)
+Agent: orchestrator
+Task: User clarified this is an Amazon AFFILIATE site (not an e-commerce shop). They earn commissions by referring visitors to Amazon via affiliate links — they don't sell products. Remove ALL e-commerce features (cart, checkout, orders, add-to-cart).
+
+## 1. Current project status / assessment
+- Prior rounds incorrectly added e-commerce features (cart, checkout, orders, revenue dashboard). The user corrected this: as an Amazon Associate, the site only CURATES product listings and refers users to Amazon. The actual purchase happens on Amazon; commission is reported by Amazon Associates, not tracked locally.
+- The correct primary CTA is "View on Amazon" (tracks the affiliate click via /api/track-click, then opens the affiliateUrl). This was already implemented as "Buy Now via Partner" — reframed to "View on Amazon".
+- Affiliated-appropriate features that STAY: product listings, search, filters, deals rail, hero, product detail (gallery + tabs), wishlist, compare, recently-viewed, theme toggle, click analytics.
+
+## 2. Completed modifications / verification
+
+### Removed (e-commerce)
+- **Cart**: deleted `src/lib/cart-store.ts`, `src/components/storefront/CartSheet.tsx`; removed cart button from `StoreHeader`; removed cart state + CartSheet from `Storefront`; removed "Add to cart" buttons from `ProductCard` + `ProductDetailDialog`; removed quantity selector from `ProductDetailDialog`.
+- **Orders**: deleted `src/components/admin/OrdersSection.tsx` + `src/app/api/admin/orders/`; removed Orders from `AdminShell` nav + `AdminPanel`. Reverted Prisma schema (removed `Order` model + `orders` relation on Product); `db push --accept-data-loss` dropped the Order table (44 seeded rows). Regenerated Prisma client.
+- **Revenue/orders dashboard**: rewrote `/api/admin/dashboard` to be click-focused (removed all orders/revenue computation); rewrote `DashboardSection` — removed Revenue/Total Orders/Units Sold/AOV KPIs + revenue chart + order-status pie; added a hero "Total Affiliate Clicks" metric card with "Revenue is reported by Amazon Associates" note, kept catalog KPIs, added a "Clicks by Category" horizontal bar chart.
+
+### Reframed (affiliate-appropriate)
+- Created `src/lib/affiliate.ts` — reusable `redirectToPartner(product)` helper (POST /api/track-click + window.open affiliateUrl + toast).
+- `ProductCard`: "Add to cart" → **"View on Amazon"** (amber CTA, tracks click).
+- `ProductDetailDialog`: removed qty selector + Add-to-cart; "Buy Now via Partner" → **"View on Amazon"** (primary amber CTA with spinner); trust badges reframed "Ships from Amazon / Amazon Returns / Secure Checkout".
+- `WishlistSheet`: "Add" → **"View on Amazon"**; footer "total" → "combined value".
+- `CompareSheet`: "Add to cart" → **"View on Amazon"** per product.
+
+### Verification (agent-browser)
+- Storefront: header has NO cart button (theme toggle + wishlist + admin only). "Add to cart" + "Cart" text fully REMOVED from the page. Product cards show "View on Amazon" + View + Compare.
+- Product detail: shows "View on Amazon" + "Save" only, no quantity selector, no Add to Cart. Gallery (4 thumbs) + Specs/Details/Reviews tabs intact.
+- Clicked "View on Amazon" → `POST /api/track-click` returned 200 (click tracked); total clicks went 61→62 confirming the affiliate metric increments.
+- Wishlist sheet: shows "View on Amazon" + "combined value".
+- Compare sheet: Actions row shows "View on Amazon" per product.
+- Admin login (admin/admin123) → Dashboard shows "Affiliate performance — clicks drive your Amazon commission", "TOTAL AFFILIATE CLICKS: 62", "Revenue is reported by Amazon Associates" note, NO Revenue/Orders/Units/AOV KPIs, NO Orders nav item. Clicks chart + Top by Clicks + Clicks by Category all render.
+- `bun run lint` → 0 errors, 0 warnings. Dev log clean, no console errors.
+
+## 3. Unresolved issues / next-phase recommendations
+- **No open bugs.** All e-commerce features cleanly removed; affiliate model fully applied.
+- Recommendation: the affiliateUrl in seed data uses a placeholder (`example-affiliate.example`). For production, replace with real Amazon affiliate URLs (with the Associate tag). The `ProductFormDialog` already supports editing the affiliateUrl field.
+- Next-phase ideas (affiliate-focused): (1) "Price drop" alerts on wishlist items; (2) per-product click detail page in admin; (3) affiliate conversion proxy (clicks ÷ product views); (4) Amazon Product Advertising API integration to auto-sync real prices/stock; (5) SEO landing pages per category; (6) a public "Top Deals" page driven by the deals filter.
+
+Stage Summary:
+- E-commerce features (cart, checkout, orders, revenue dashboard, add-to-cart) fully removed. Site is now a correct Amazon affiliate storefront: product curation + "View on Amazon" click-throughs (tracked) + wishlist/compare/recently-viewed + click-focused admin analytics. All verified via agent-browser. Lint clean.

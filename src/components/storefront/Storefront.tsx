@@ -7,7 +7,6 @@ import { DealsRail } from "./DealsRail";
 import { ProductGrid } from "./ProductGrid";
 import { StoreFooter } from "./StoreFooter";
 import { ProductDetailDialog } from "./ProductDetailDialog";
-import { CartSheet } from "./CartSheet";
 import { WishlistSheet } from "./WishlistSheet";
 import { RecentlyViewedRail } from "./RecentlyViewedRail";
 import { CompareBar } from "./CompareBar";
@@ -55,7 +54,6 @@ export function Storefront({ onOpenAdmin }: StorefrontProps) {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [sort, setSort] = useState("featured");
   const [selected, setSelected] = useState<Product | null>(null);
-  const [cartOpen, setCartOpen] = useState(false);
   const [wishlistOpen, setWishlistOpen] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
@@ -153,7 +151,6 @@ export function Storefront({ onOpenAdmin }: StorefrontProps) {
     <div className="flex min-h-screen flex-col bg-background">
       <StoreHeader
         onOpenAdmin={onOpenAdmin}
-        onOpenCart={() => setCartOpen(true)}
         onOpenWishlist={() => setWishlistOpen(true)}
         onSearch={handleSearch}
         categories={categories}
@@ -309,7 +306,6 @@ export function Storefront({ onOpenAdmin }: StorefrontProps) {
         product={selected}
         onOpenChange={(o) => !o && setSelected(null)}
       />
-      <CartSheet open={cartOpen} onOpenChange={setCartOpen} />
       <WishlistSheet
         open={wishlistOpen}
         onOpenChange={setWishlistOpen}

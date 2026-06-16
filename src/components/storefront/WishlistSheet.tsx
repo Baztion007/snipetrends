@@ -11,10 +11,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useWishlist } from "@/lib/wishlist-store";
-import { useCart } from "@/lib/cart-store";
+import { redirectToPartner } from "@/lib/affiliate";
 import { formatPrice, discountPercent } from "@/lib/format";
 import { toast } from "sonner";
-import { Heart, Trash2, ShoppingCart, ArrowRight, X } from "lucide-react";
+import { Heart, Trash2, ExternalLink, ArrowRight, X } from "lucide-react";
 import type { Product } from "@/lib/types";
 
 interface WishlistSheetProps {
@@ -27,11 +27,9 @@ export function WishlistSheet({ open, onOpenChange, onSelect }: WishlistSheetPro
   const items = useWishlist((s) => s.items);
   const remove = useWishlist((s) => s.remove);
   const clear = useWishlist((s) => s.clear);
-  const addItem = useCart((s) => s.addItem);
 
-  const handleAddToCart = (p: Product) => {
-    addItem(p, 1);
-    toast.success("Added to cart", { description: p.title });
+  const handleViewOnAmazon = (p: Product) => {
+    redirectToPartner(p);
   };
 
   const handleSelect = (p: Product) => {
@@ -132,12 +130,11 @@ export function WishlistSheet({ open, onOpenChange, onSelect }: WishlistSheetPro
                         <div className="mt-auto flex items-center gap-2 pt-1">
                           <Button
                             size="sm"
-                            onClick={() => handleAddToCart(p)}
-                            disabled={p.stock <= 0}
+                            onClick={() => handleViewOnAmazon(p)}
                             className="h-8 gap-1.5 bg-amber-500 text-white hover:bg-amber-600"
                           >
-                            <ShoppingCart size={13} />
-                            Add
+                            <ExternalLink size={13} />
+                            View on Amazon
                           </Button>
                           <Button
                             size="sm"
@@ -162,7 +159,7 @@ export function WishlistSheet({ open, onOpenChange, onSelect }: WishlistSheetPro
                   {items.length} saved {items.length === 1 ? "item" : "items"}
                 </span>
                 <span className="font-semibold">
-                  {formatPrice(items.reduce((s, p) => s + p.price, 0))} total
+                  {formatPrice(items.reduce((s, p) => s + p.price, 0))} combined value
                 </span>
               </div>
               <Separator className="my-2" />

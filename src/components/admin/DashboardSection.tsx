@@ -10,9 +10,7 @@ import {
   DollarSign,
   TrendingUp,
   Crown,
-  ShoppingCart,
-  Receipt,
-  Boxes,
+  ExternalLink,
 } from "lucide-react";
 import {
   Area,
@@ -21,9 +19,6 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
-  Pie,
-  PieChart,
-  Legend,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -33,6 +28,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatPrice, formatCompact } from "@/lib/format";
 
+const CAT_COLORS = ["#f59e0b", "#10b981", "#f43f5e", "#8b5cf6", "#06b6d4", "#a3a3a3"];
+
 interface DashboardData {
   stats: {
     totalProducts: number;
@@ -41,16 +38,9 @@ interface DashboardData {
     featuredCount: number;
     lowStock: number;
     catalogValue: number;
-    totalOrders: number;
-    completedOrders: number;
-    pendingOrders: number;
-    cancelledOrders: number;
-    totalRevenue: number;
-    totalUnitsSold: number;
   };
   clicksPerDay: { date: string; count: number }[];
-  revenuePerDay: { date: string; revenue: number; orders: number }[];
-  orderStatus: { name: string; value: number; color: string }[];
+  clicksByCategory: { name: string; clicks: number }[];
   topProducts: {
     id: string;
     title: string;
@@ -143,12 +133,16 @@ export function DashboardSection() {
     ? Math.max(1, ...data.clicksPerDay.map((d) => d.count))
     : 1;
 
+  const totalCatClicks = data
+    ? data.clicksByCategory.reduce((s, c) => s + c.clicks, 0)
+    : 0;
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Overview of your affiliate storefront performance
+          Affiliate performance — clicks drive your Amazon commission
         </p>
       </div>
 
@@ -160,48 +154,40 @@ export function DashboardSection() {
         </Card>
       )}
 
-      {/* Revenue + Orders KPIs (top row, highlighted) */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <KpiCard
-          icon={DollarSign}
-          label="Revenue"
-          value={data ? formatPrice(data.stats.totalRevenue) : ""}
-          sub={data ? `${data.stats.completedOrders} completed orders` : ""}
-          tint="emerald"
-          loading={loading}
-        />
-        <KpiCard
-          icon={ShoppingCart}
-          label="Total Orders"
-          value={data ? String(data.stats.totalOrders) : ""}
-          sub={data ? `${data.stats.pendingOrders} pending` : ""}
-          tint="amber"
-          loading={loading}
-        />
-        <KpiCard
-          icon={Boxes}
-          label="Units Sold"
-          value={data ? String(data.stats.totalUnitsSold) : ""}
-          sub="from completed orders"
-          tint="violet"
-          loading={loading}
-        />
-        <KpiCard
-          icon={Receipt}
-          label="Avg Order Value"
-          value={
-            data && data.stats.completedOrders > 0
-              ? formatPrice(data.stats.totalRevenue / data.stats.completedOrders)
-              : "—"
-          }
-          sub="per completed order"
-          tint="sky"
-          loading={loading}
-        />
-      </div>
+      {/* Hero affiliate metric */}
+      <Card className="overflow-hidden border-amber-500/30 bg-gradient-to-br from-amber-500/5 to-emerald-500/5">
+        <CardContent className="p-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="grid h-14 w-14 place-items-center rounded-2xl bg-amber-500/15 text-amber-500">
+                <MousePointerClick className="h-7 w-7" />
+              </div>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Total Affiliate Clicks
+                </p>
+                {loading ? (
+                  <Skeleton className="mt-1 h-9 w-28" />
+                ) : (
+                  <p className="text-3xl font-bold tracking-tight">
+                    {formatCompact(data?.stats.totalClicks ?? 0)}
+                  </p>
+                )}
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Click-throughs to Amazon generate your commission
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+              <ExternalLink className="size-3.5" />
+              Revenue is reported by Amazon Associates
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Catalog KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
         <KpiCard
           icon={Package}
           label="Products"
@@ -214,13 +200,6 @@ export function DashboardSection() {
           label="Categories"
           value={data ? String(data.stats.totalCategories) : ""}
           tint="emerald"
-          loading={loading}
-        />
-        <KpiCard
-          icon={MousePointerClick}
-          label="Clicks"
-          value={data ? formatCompact(data.stats.totalClicks) : ""}
-          tint="violet"
           loading={loading}
         />
         <KpiCard
@@ -246,122 +225,6 @@ export function DashboardSection() {
         />
       </div>
 
-      {/* Revenue chart + Order status pie */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2 border-border/60">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <DollarSign className="h-4 w-4 text-emerald-500" />
-              Revenue · Last 14 Days
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <Skeleton className="h-[260px] w-full" />
-            ) : (
-              <ResponsiveContainer width="100%" height={260}>
-                <AreaChart
-                  data={data?.revenuePerDay ?? []}
-                  margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
-                >
-                  <defs>
-                    <linearGradient id="revFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="hsl(var(--border) / 0.5)"
-                    vertical={false}
-                  />
-                  <XAxis
-                    dataKey="date"
-                    tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                    tickFormatter={(d: string) => d.slice(5)}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                    axisLine={false}
-                    tickLine={false}
-                    tickFormatter={(v: number) => `$${v >= 1000 ? (v / 1000).toFixed(1) + "k" : v}`}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      borderRadius: 10,
-                      border: "1px solid hsl(var(--border))",
-                      background: "hsl(var(--popover))",
-                      color: "hsl(var(--popover-foreground))",
-                      fontSize: 12,
-                    }}
-                    formatter={(v: number) => [formatPrice(v), "Revenue"]}
-                    labelFormatter={(d: string) => d}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="revenue"
-                    stroke="#10b981"
-                    strokeWidth={2.5}
-                    fill="url(#revFill)"
-                    dot={false}
-                    activeDot={{ r: 4, fill: "#10b981" }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Order status pie */}
-        <Card className="border-border/60">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Receipt className="h-4 w-4 text-amber-500" />
-              Order Status
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <Skeleton className="h-[260px] w-full" />
-            ) : (
-              <ResponsiveContainer width="100%" height={260}>
-                <PieChart>
-                  <Pie
-                    data={data?.orderStatus ?? []}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="45%"
-                    innerRadius={50}
-                    outerRadius={80}
-                    paddingAngle={3}
-                  >
-                    {(data?.orderStatus ?? []).map((entry, i) => (
-                      <Cell key={i} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      borderRadius: 10,
-                      border: "1px solid hsl(var(--border))",
-                      background: "hsl(var(--popover))",
-                      color: "hsl(var(--popover-foreground))",
-                      fontSize: 12,
-                    }}
-                  />
-                  <Legend
-                    iconType="circle"
-                    wrapperStyle={{ fontSize: 12, paddingTop: 10 }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Clicks chart + Top products */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2 border-border/60">
@@ -373,13 +236,19 @@ export function DashboardSection() {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <Skeleton className="h-[240px] w-full" />
+              <Skeleton className="h-[260px] w-full" />
             ) : (
-              <ResponsiveContainer width="100%" height={240}>
-                <BarChart
+              <ResponsiveContainer width="100%" height={260}>
+                <AreaChart
                   data={data?.clicksPerDay ?? []}
                   margin={{ top: 10, right: 10, left: -18, bottom: 0 }}
                 >
+                  <defs>
+                    <linearGradient id="clickFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid
                     strokeDasharray="3 3"
                     stroke="hsl(var(--border) / 0.5)"
@@ -406,10 +275,18 @@ export function DashboardSection() {
                       color: "hsl(var(--popover-foreground))",
                       fontSize: 12,
                     }}
-                    cursor={{ fill: "hsl(var(--muted) / 0.4)" }}
+                    labelFormatter={(d: string) => d}
                   />
-                  <Bar dataKey="count" radius={[6, 6, 0, 0]} maxBarSize={32} fill="#f59e0b" />
-                </BarChart>
+                  <Area
+                    type="monotone"
+                    dataKey="count"
+                    stroke="#f59e0b"
+                    strokeWidth={2.5}
+                    fill="url(#clickFill)"
+                    dot={false}
+                    activeDot={{ r: 4, fill: "#f59e0b" }}
+                  />
+                </AreaChart>
               </ResponsiveContainer>
             )}
             <p className="mt-2 text-xs text-muted-foreground">
@@ -466,6 +343,68 @@ export function DashboardSection() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Clicks by category */}
+      <Card className="border-border/60">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Tags className="h-4 w-4 text-emerald-500" />
+            Clicks by Category
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <Skeleton className="h-[240px] w-full" />
+          ) : (
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart
+                data={data?.clicksByCategory ?? []}
+                layout="vertical"
+                margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="hsl(var(--border) / 0.5)"
+                  horizontal={false}
+                />
+                <XAxis
+                  type="number"
+                  allowDecimals={false}
+                  tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  type="category"
+                  dataKey="name"
+                  tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={90}
+                />
+                <Tooltip
+                  contentStyle={{
+                    borderRadius: 10,
+                    border: "1px solid hsl(var(--border))",
+                    background: "hsl(var(--popover))",
+                    color: "hsl(var(--popover-foreground))",
+                    fontSize: 12,
+                  }}
+                  cursor={{ fill: "hsl(var(--muted) / 0.4)" }}
+                />
+                <Bar dataKey="clicks" radius={[0, 6, 6, 0]} maxBarSize={28}>
+                  {(data?.clicksByCategory ?? []).map((_, i) => (
+                    <Cell key={i} fill={CAT_COLORS[i % CAT_COLORS.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+          <p className="mt-2 text-xs text-muted-foreground">
+            {totalCatClicks} total clicks across all categories
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

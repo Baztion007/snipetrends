@@ -13,10 +13,10 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { StarRating } from "./StarRating";
 import { useCompare, COMPARE_MAX } from "@/lib/compare-store";
-import { useCart } from "@/lib/cart-store";
+import { redirectToPartner } from "@/lib/affiliate";
 import { formatPrice, discountPercent } from "@/lib/format";
 import { toast } from "sonner";
-import { X, GitCompareArrows, ShoppingCart, Check, Star } from "lucide-react";
+import { X, GitCompareArrows, ExternalLink, Check, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Product } from "@/lib/types";
 
@@ -36,11 +36,9 @@ export function CompareSheet({ open, onOpenChange, onSelect }: CompareSheetProps
   const items = useCompare((s) => s.items);
   const remove = useCompare((s) => s.remove);
   const clear = useCompare((s) => s.clear);
-  const addItem = useCart((s) => s.addItem);
 
-  const handleAddToCart = (p: Product) => {
-    addItem(p, 1);
-    toast.success("Added to cart", { description: p.title });
+  const handleViewOnAmazon = (p: Product) => {
+    redirectToPartner(p);
   };
 
   // best value = lowest price among compared items
@@ -251,12 +249,11 @@ export function CompareSheet({ open, onOpenChange, onSelect }: CompareSheetProps
                         <Button
                           key={p.id}
                           size="sm"
-                          onClick={() => handleAddToCart(p)}
-                          disabled={p.stock <= 0}
-                          className="w-full gap-1.5 bg-amber-500 text-white hover:bg-amber-600"
+                          onClick={() => handleViewOnAmazon(p)}
+                          className="w-full gap-1.5 bg-amber-500 text-zinc-950 hover:bg-amber-400"
                         >
-                          <ShoppingCart size={13} />
-                          Add to cart
+                          <ExternalLink size={13} />
+                          View on Amazon
                         </Button>
                       ))}
                       noBest

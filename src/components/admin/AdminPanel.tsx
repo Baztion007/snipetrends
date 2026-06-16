@@ -7,7 +7,6 @@ import { DashboardSection } from "./DashboardSection";
 import { ProductsSection } from "./ProductsSection";
 import { CategoriesSection } from "./CategoriesSection";
 import { AnalyticsSection } from "./AnalyticsSection";
-import { OrdersSection } from "./OrdersSection";
 import type { Category } from "@/lib/types";
 
 interface AdminPanelProps {
@@ -97,7 +96,6 @@ export function AdminPanel({ onExit }: AdminPanelProps) {
       }}
     >
       {section === "dashboard" && <DashboardSection />}
-      {section === "orders" && <OrdersSection />}
       {section === "products" && <ProductsSection categories={categories} />}
       {section === "categories" && <CategoriesSection />}
       {section === "analytics" && <AnalyticsSection />}

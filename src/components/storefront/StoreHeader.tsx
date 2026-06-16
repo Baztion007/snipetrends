@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ShoppingBag, Search, User, ShoppingCart, Heart } from "lucide-react";
+import { ShoppingBag, Search, User, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -11,7 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useCart } from "@/lib/cart-store";
 import { useWishlist } from "@/lib/wishlist-store";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
@@ -21,7 +20,6 @@ export const DEALS_SENTINEL = "__deals__";
 
 interface StoreHeaderProps {
   onOpenAdmin: () => void;
-  onOpenCart: () => void;
   onOpenWishlist: () => void;
   onSearch: (q: string) => void;
   categories: Category[];
@@ -31,7 +29,6 @@ interface StoreHeaderProps {
 
 export function StoreHeader({
   onOpenAdmin,
-  onOpenCart,
   onOpenWishlist,
   onSearch,
   categories,
@@ -39,7 +36,6 @@ export function StoreHeader({
   onCategory,
 }: StoreHeaderProps) {
   const [q, setQ] = useState("");
-  const count = useCart((s) => s.totalItems());
   const wishCount = useWishlist((s) => s.count());
 
   const submit = (e: React.FormEvent) => {
@@ -143,21 +139,6 @@ export function StoreHeader({
             >
               <User size={18} />
               <span className="hidden md:inline">Admin</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onOpenCart}
-              className="relative h-10 gap-2 text-zinc-100 hover:bg-zinc-800 hover:text-white"
-              aria-label={`Cart with ${count} ${count === 1 ? "item" : "items"}`}
-            >
-              <ShoppingCart size={20} />
-              {count > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold text-zinc-950">
-                  {count > 99 ? "99+" : count}
-                </span>
-              )}
-              <span className="hidden md:inline">Cart</span>
             </Button>
           </div>
         </div>
