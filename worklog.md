@@ -511,3 +511,28 @@ Per the user's link to the Amazon Associates Operating Agreement policies, remov
 
 ## Answer to "how does Site Name work?"
 Edit Admin → Settings → "Site Name" field → Save. The value is stored in the `SiteSetting` DB table and fetched by the storefront via `/api/settings` on page load. The header logo text, footer brand name, copyright line, and affiliate disclosure all use it. Changes take effect on the next page load (or immediately for new visitors).
+
+---
+Task ID: 18 (user report — brand panel text broken, images not displaying, affiliate URL not using configured tag)
+Agent: orchestrator
+
+## 1. Affiliate URL not using configured tag — FIXED (root cause: placeholder URLs)
+**Root cause**: All 12 products had placeholder affiliate URLs like `https://example-affiliate.example/dp/XXX?tag=affstore-20`. Because those URLs ALREADY contained `?tag=affstore-20` (a fake hardcoded tag), my track-click logic correctly did NOT override an existing tag — so the configured Associate tag (`snipetrends-20`) was never applied.
+**Fix**: Replaced all 12 placeholder URLs with clean real Amazon ASIN URLs (`https://www.amazon.com/dp/<ASIN>`) with NO tag. Now track-click appends the configured tag automatically. Verified: clicking "View on Amazon" returns `https://www.amazon.com/dp/B0CHX9W1XY?tag=snipetrends-20`.
+**How it works**: Set your Associate tag once in Admin → Settings. When a visitor clicks "View on Amazon", `/api/track-click` checks the product's affiliateUrl — if it has no `?tag=`, the configured tag is appended. If a product URL already has a tag (e.g. a campaign-specific one), it's left as-is.
+
+## 2. Amazon Base URL — how it works
+The `amazonBaseUrl` setting is a reference/default field. Product affiliate URLs are stored as full URLs per product (e.g. `https://www.amazon.com/dp/<ASIN>`), so the base URL is baked into each product's URL. The base URL setting exists so you can document which Amazon locale you're targeting (.com/.co.uk/.de). To use a different locale, set the base URL AND update product affiliate URLs to use that locale's domain.
+
+## 3. Product images not displaying in detail dialog — FIXED
+**Root cause**: The gallery container used `md:aspect-auto` (no intrinsic height on desktop), so `next/image fill` rendered at 0 height → blank image area (confirmed by VLM: "blank/empty, no image displayed").
+**Fix**: Changed the container to `aspect-square` on all breakpoints so it always has a defined height. Verified: image now loads via `/_next/image` optimizer, naturalWidth=640, complete=true.
+
+## 4. Brand checkbox text broken — FIXED
+**Root cause**: Brand label text had no truncation — long brand names could overflow/wrap awkwardly in the narrow sidebar.
+**Fix**: Added `truncate` to brand label spans + `max-w-[100px] truncate` to the active-filter brand chips. Verified: brands render cleanly with no overflow.
+
+## 5. Verification
+- `bun run lint` → 0 errors, 0 warnings. Dev log clean. Console clean.
+- agent-browser verified: detail dialog image loads (naturalWidth 640 via /_next/image); brand checkboxes truncate cleanly; "View on Amazon" → POST /api/track-click 200 → URL = https://www.amazon.com/dp/<ASIN>?tag=snipetrends-20.
+- curl verified: 3 products all return the configured tag.

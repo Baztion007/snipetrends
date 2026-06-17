@@ -392,7 +392,7 @@ function ProductGallery({
 
   return (
     <div className="flex flex-col gap-2 bg-muted">
-      <div className="relative aspect-square overflow-hidden bg-muted md:aspect-auto">
+      <div className="relative aspect-square overflow-hidden bg-muted">
         <Image
           src={gallery[activeImage] ?? product.image}
           alt={product.title}

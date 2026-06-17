@@ -145,7 +145,7 @@ export function FilterPanel({
                       onCheckedChange={() => toggleBrand(b)}
                       className="border-zinc-400 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
                     />
-                    <span>{b}</span>
+                    <span className="truncate">{b}</span>
                   </label>
                 ))}
               </div>
@@ -190,7 +190,7 @@ export function FilterPanel({
               variant="secondary"
               className="gap-1 bg-amber-500/10 text-amber-700 dark:text-amber-400"
             >
-              {b}
+              <span className="max-w-[100px] truncate">{b}</span>
               <button onClick={() => toggleBrand(b)} aria-label={`Remove ${b}`}>
                 <X size={11} />
               </button>
