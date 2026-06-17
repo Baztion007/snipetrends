@@ -6,6 +6,7 @@ import {
   Package,
   Tags,
   BarChart3,
+  Settings,
   LogOut,
   Store,
   ShieldCheck,
@@ -23,7 +24,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { AdminUser } from "./AdminLogin";
 
-export type AdminSection = "dashboard" | "products" | "categories" | "analytics";
+export type AdminSection = "dashboard" | "products" | "categories" | "analytics" | "settings";
 
 interface AdminShellProps {
   user: AdminUser;
@@ -39,6 +40,7 @@ const NAV: { id: AdminSection; label: string; icon: typeof Package }[] = [
   { id: "products", label: "Products", icon: Package },
   { id: "categories", label: "Categories", icon: Tags },
   { id: "analytics", label: "Analytics", icon: BarChart3 },
+  { id: "settings", label: "Settings", icon: Settings },
 ];
 
 function SidebarContent({

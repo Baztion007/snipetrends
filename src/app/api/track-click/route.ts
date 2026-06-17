@@ -63,7 +63,27 @@ export async function POST(req: NextRequest) {
       data: { productId, ip, userAgent, referrer },
     });
 
-    return NextResponse.json({ ok: true, affiliateUrl: product.affiliateUrl });
+    // Append the configured Amazon Associate tag if the URL doesn't already
+    // carry one. This is where your affiliate ID is applied — configure it
+    // once in Admin → Settings and every outbound link earns your commission.
+    let finalUrl = product.affiliateUrl;
+    const settings = await db.siteSetting.findUnique({
+      where: { id: "singleton" },
+      select: { amazonAssociateTag: true },
+    });
+    if (settings?.amazonAssociateTag) {
+      try {
+        const u = new URL(finalUrl);
+        if (!u.searchParams.has("tag")) {
+          u.searchParams.set("tag", settings.amazonAssociateTag);
+          finalUrl = u.toString();
+        }
+      } catch {
+        /* keep original URL if it can't be parsed */
+      }
+    }
+
+    return NextResponse.json({ ok: true, affiliateUrl: finalUrl });
   } catch (e) {
     console.error("[track-click]", e);
     return NextResponse.json(

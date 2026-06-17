@@ -1,0 +1,29 @@
+# Cloudflare Pages / Workers config for Next.js (via @opennextjs/cloudflare)
+# Deploy with: bunx opennextjs-cloudflare && bunx wrangler deploy
+# See: https://opennext.js.org/cloudflare
+
+name = "shopaffiliate"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+# The build output from @opennextjs/cloudflare
+main = ".open-next/worker.js"
+
+# Assets (static files) served by Cloudflare's CDN
+[assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+
+# ─── Environment variables (non-secret) ───────────────────────────────────
+# Set secrets (SESSION_SECRET, DATABASE_URL) via:
+#   bunx wrangler secret put SESSION_SECRET
+#   bunx wrangler secret put DATABASE_URL
+[vars]
+NEXT_PUBLIC_SITE_URL = "https://your-domain.com"
+
+# ─── Observability ─────────────────────────────────────────────────────────
+[observability]
+enabled = true
+
+# ─── Local dev with Wrangler ───────────────────────────────────────────────
+# Run `bunx wrangler dev` to test the worker locally.

@@ -7,6 +7,7 @@ import { DashboardSection } from "./DashboardSection";
 import { ProductsSection } from "./ProductsSection";
 import { CategoriesSection } from "./CategoriesSection";
 import { AnalyticsSection } from "./AnalyticsSection";
+import { SettingsSection } from "./SettingsSection";
 import type { Category } from "@/lib/types";
 
 interface AdminPanelProps {
@@ -99,6 +100,7 @@ export function AdminPanel({ onExit }: AdminPanelProps) {
       {section === "products" && <ProductsSection categories={categories} />}
       {section === "categories" && <CategoriesSection />}
       {section === "analytics" && <AnalyticsSection />}
+      {section === "settings" && <SettingsSection />}
     </AdminShell>
   );
 }

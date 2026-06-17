@@ -22,6 +22,29 @@ model AdminUser {
   updatedAt    DateTime @updatedAt
 }
 
+// Single-row key/value store for site-wide affiliate configuration.
+// Holds the Amazon Associate tag, site name, disclosure text, etc. — all
+// editable from the admin "Settings" panel so you never hardcode them.
+model SiteSetting {
+  id    String @id @default("singleton")
+  // Your Amazon Associates tracking ID, e.g. "yourstore-20".
+  // Appended to every affiliate URL as ?tag=<associateTag>.
+  amazonAssociateTag String  @default("")
+  // Optional base URL for affiliate links (defaults to https://www.amazon.com).
+  amazonBaseUrl      String  @default("https://www.amazon.com")
+  // Display name of the site (used in footer / disclosure).
+  siteName           String  @default("ShopAffiliate")
+  // Contact email shown in the footer / admin.
+  contactEmail       String  @default("hello@shopaffiliate.example")
+  // Custom affiliate disclosure override (empty = use default).
+  disclosureOverride String?
+  socialTwitter      String?
+  socialInstagram    String?
+  socialYoutube      String?
+  socialGithub       String?
+  updatedAt          DateTime @updatedAt
+}
+
 model Category {
   id        String    @id @default(cuid())
   name      String

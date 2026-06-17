@@ -375,3 +375,49 @@ Task: Tackle all suggested improvements; ensure WCAG/accessibility, SEO/AEO, sec
 
 Stage Summary:
 - All 4 suggested improvements shipped. Production readiness: yes with documented caveats. Security hardened (rate limit + validation + headers + strict build). SEO/AEO (metadata + JSON-LD + sitemap + robots). WCAG (skip link + ARIA + semantics + keyboard). Lint clean. Verified end-to-end.
+
+---
+Task ID: 15 (user request — preview fix, password change, affiliate config, GitHub+Cloudflare deploy, next round)
+Agent: orchestrator
+
+## 1. Preview fix
+- Root cause: the in-memory rate limiter blocked the IP after my brute-force QA test (5 wrong logins → 429 for 15 min). Restarted dev server to clear state; login works again. No code change needed — the limiter works as designed; this was a QA side-effect.
+
+## 2. Password change flow (NEW)
+- API: `POST /api/admin/change-password` — requires current session, verifies current password, enforces policy (min 8 chars, must contain a letter + a number, must differ from current), rejects if new==current. Uses `hashPassword` (scrypt) for the new hash.
+- UI: `SettingsSection.tsx` → "Change Password" card with Current/New/Confirm fields, show/hide toggle, inline policy hint. Toast feedback for success/error.
+- Verified: wrong current → "Current password is incorrect"; weak password → "Password must be at least 8 characters"; valid change → "Password changed"; old password then fails (401), new works (200). Reset back to admin123.
+
+## 3. Affiliate configuration (NEW — answers "where do I add affiliate links?")
+- **SiteSetting model** (Prisma): singleton row holding `amazonAssociateTag`, `amazonBaseUrl`, `siteName`, `contactEmail`, `disclosureOverride`, social URLs.
+- **Settings API**: `GET /api/settings` (public, non-secret fields) + `GET/PUT /api/admin/settings` (admin, all fields with validation).
+- **Admin Settings panel** (`SettingsSection.tsx`): a prominent "Where do I add my Amazon affiliate links?" help box explaining the Associate tag. Fields for tag, base URL, site name, contact email, custom disclosure, 4 social URLs. Save → toast.
+- **Tag auto-append**: `/api/track-click` now reads the configured `amazonAssociateTag` and appends `?tag=<tag>` to the affiliate URL if it doesn't already have one. Verified: URL without tag → `?tag=yourstore-20` appended; URL with existing tag → left alone (no duplication).
+- Added "Settings" to admin nav (AdminShell + AdminPanel).
+- **Answer to user's question**: Configure your Amazon Associate tag ONCE in Admin → Settings → "Amazon Associate Tag". Every "View on Amazon" click then earns your commission automatically. You can also set per-product affiliate URLs in the product form (the global tag won't duplicate an existing one).
+
+## 4. GitHub + Cloudflare deployment prep
+- **`.env.example`**: documents DATABASE_URL, SESSION_SECRET, NEXT_PUBLIC_SITE_URL, Cloudflare vars.
+- **`.gitignore`**: added `.env*` (with `!.env.example` exception), `.wrangler`, `.open-next`, `db/*.db` (never commit SQLite).
+- **`wrangler.toml`**: Cloudflare config for `@opennextjs/cloudflare` — name, nodejs_compat flag, assets binding, vars, observability.
+- **`.github/workflows/ci.yml`**: CI runs `bun install` → `db:generate` → `lint` → `tsc --noEmit` on push/PR.
+- **`README.md`**: comprehensive — features, quick start, **"Where do I add my Amazon affiliate links?"** section (both options), full deployment guide (GitHub → Turso/Neon → Cloudflare with @opennextjs/cloudflare), post-deploy checklist, tech stack, scripts.
+- **DB migration note**: SQLite files don't work on Cloudflare's edge — README documents migrating to Turso (libSQL) or Neon (Postgres) by changing the Prisma `provider` + `DATABASE_URL`.
+
+## 5. Verification
+- `bun run lint` → 0 errors, 0 warnings.
+- Dev server compiles clean; dev.log clean; console clean.
+- agent-browser verified: Settings nav item, Settings panel renders with help box, Associate tag saved ("yourstore-20"), toast "Settings saved", tag persisted to DB, track-click appends tag to untagged URLs.
+- Password change: wrong current → rejected; weak → rejected; valid → changed; old fails 401 / new works 200.
+- All deployment files present (.env.example, .gitignore, README.md, wrangler.toml, ci.yml).
+
+## 6. Next round — deferred items (documented in README + worklog)
+- Real server-rendered product detail pages (`/product/[id]`) for per-product SEO — currently a client dialog.
+- `next/image` instead of raw `<img>` for optimization (AVIF, responsive).
+- Code-split the admin panel (only loads when Admin clicked).
+- Per-product click drill-down in admin + CSV export.
+- Second admin user + invite flow.
+- Swap in-memory rate limiter for Cloudflare KV / Durable Objects when deploying multi-instance.
+
+Stage Summary:
+- Preview fixed (rate limiter cleared). Password change flow working. Affiliate config (Associate tag) configurable in admin Settings, auto-appended to all outbound links. GitHub (CI + .gitignore + .env.example) + Cloudflare (wrangler.toml + README deploy guide) ready. "Where do I add affiliate links?" answered: Admin → Settings → Amazon Associate Tag. Lint clean. All verified.
