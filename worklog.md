@@ -536,3 +536,28 @@ The `amazonBaseUrl` setting is a reference/default field. Product affiliate URLs
 - `bun run lint` → 0 errors, 0 warnings. Dev log clean. Console clean.
 - agent-browser verified: detail dialog image loads (naturalWidth 640 via /_next/image); brand checkboxes truncate cleanly; "View on Amazon" → POST /api/track-click 200 → URL = https://www.amazon.com/dp/<ASIN>?tag=snipetrends-20.
 - curl verified: 3 products all return the configured tag.
+
+---
+Task ID: 19 (user report — sidebar text broken + what else needs improvement)
+Agent: orchestrator
+
+## 1. Left sidebar filter panel text broken — FIXED
+**Root cause**: flex items (checkbox + label) lacked `min-w-0`, so they couldn't shrink below content width at narrow viewports → header "AVAILABILITY" truncated to "AVAILABL", labels cut off.
+**Fix**: Added `min-w-0` to the panel root, all section divs, and every label; added `shrink-0` to checkboxes; `whitespace-nowrap` on the "Filters" header; `block` on Label components. Verified via VLM: "AVAILABILITY", "In stock only", "On sale only" all fully readable.
+
+## 2. Product images blank in grid — FIXED
+**Root cause**: Two Unsplash URLs failed `next/image` optimization in dev mode (returned 200 on HEAD but the optimizer produced broken output). No fallback existed → blank boxes.
+**Fix**:
+- Created `SmartImage` component — wraps `next/image` with an `onError` fallback that shows a clean "No image" placeholder (PackageOpen icon) instead of a blank box.
+- Swapped ProductCard + ProductDetailDialog gallery to use SmartImage.
+- Replaced the 2 problematic Unsplash URLs with known-working alternatives.
+- Verified via VLM: 5/5 product cards in the main grid show visible images, 0 blank.
+
+## 3. What else needs improvement — assessment
+Concrete improvements made this round: filter panel text truncation, image fallback robustness, replaced broken image URLs.
+Remaining items for future rounds (documented, not blocking):
+- **Real product ASINs**: current affiliate URLs use placeholder ASINs (B0CHX...) — replace with real Amazon product ASINs in Admin → Products.
+- **Real product images**: currently using Unsplash stock photos — for a real affiliate site, use the actual Amazon product images (via the Product Advertising API or manual upload).
+- **Per-product SEO pages**: product detail is a client dialog; server-rendered `/product/[id]` pages would improve SEO indexing (blocked by the single-route constraint in this environment).
+- **Email integration**: newsletter subscribers are stored + CSV-exportable; no auto-send to an email platform yet.
+- **Cloudflare KV rate limiting**: current limiter is in-memory (single-instance); swap for KV/Durable Objects when deploying multi-instance.

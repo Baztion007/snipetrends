@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
+import { SmartImage } from "./SmartImage";
 import {
   Dialog,
   DialogContent,
@@ -393,13 +393,14 @@ function ProductGallery({
   return (
     <div className="flex flex-col gap-2 bg-muted">
       <div className="relative aspect-square overflow-hidden bg-muted">
-        <Image
+        <SmartImage
           src={gallery[activeImage] ?? product.image}
           alt={product.title}
           fill
           priority
           sizes="(max-width: 768px) 100vw, 50vw"
           className="size-full object-cover"
+          fallbackLabel="Image unavailable"
         />
         {product.badge && (
           <span
@@ -427,7 +428,7 @@ function ProductGallery({
                   : "border-transparent opacity-70 hover:opacity-100"
               )}
             >
-              <Image src={src} alt="" fill sizes="56px" className="size-full object-cover" />
+              <SmartImage src={src} alt="" fill sizes="56px" className="size-full object-cover" />
             </button>
           ))}
         </div>

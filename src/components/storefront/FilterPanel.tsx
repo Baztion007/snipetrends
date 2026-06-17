@@ -74,16 +74,16 @@ export function FilterPanel({
     (filters.onSaleOnly ? 1 : 0);
 
   return (
-    <div className={cn("flex flex-col gap-5", className)}>
-      <div className="flex items-center justify-between">
-        <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-muted-foreground">
-          <SlidersHorizontal size={15} />
+    <div className={cn("flex flex-col gap-5 min-w-0", className)}>
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-muted-foreground whitespace-nowrap">
+          <SlidersHorizontal size={15} className="shrink-0" />
           Filters
         </h3>
         {activeCount > 0 && (
           <button
             onClick={() => onChange(DEFAULT_FILTERS)}
-            className="flex items-center gap-1 text-xs text-rose-600 hover:underline"
+            className="flex shrink-0 items-center gap-1 text-xs text-rose-600 hover:underline"
           >
             <X size={12} />
             Clear ({activeCount})
@@ -94,8 +94,8 @@ export function FilterPanel({
       <Separator />
 
       {/* Rating */}
-      <div className="space-y-2.5">
-        <Label className="text-xs font-semibold uppercase tracking-wide">
+      <div className="space-y-2.5 min-w-0">
+        <Label className="text-xs font-semibold uppercase tracking-wide block">
           Minimum Rating
         </Label>
         <div className="flex flex-col gap-1.5">
@@ -129,8 +129,8 @@ export function FilterPanel({
       {/* Brands */}
       {brands.length > 0 && (
         <>
-          <div className="space-y-2.5">
-            <Label className="text-xs font-semibold uppercase tracking-wide">
+          <div className="space-y-2.5 min-w-0">
+            <Label className="text-xs font-semibold uppercase tracking-wide block">
               Brands
             </Label>
             <ScrollArea className="max-h-40">
@@ -138,14 +138,14 @@ export function FilterPanel({
                 {brands.map((b) => (
                   <label
                     key={b}
-                    className="flex cursor-pointer items-center gap-2 text-sm"
+                    className="flex min-w-0 cursor-pointer items-center gap-2 text-sm"
                   >
                     <Checkbox
                       checked={filters.brands.includes(b)}
                       onCheckedChange={() => toggleBrand(b)}
-                      className="border-zinc-400 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
+                      className="border-zinc-400 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 shrink-0"
                     />
-                    <span className="truncate">{b}</span>
+                    <span className="truncate min-w-0">{b}</span>
                   </label>
                 ))}
               </div>
@@ -156,29 +156,29 @@ export function FilterPanel({
       )}
 
       {/* Toggles */}
-      <div className="space-y-2.5">
-        <Label className="text-xs font-semibold uppercase tracking-wide">
+      <div className="space-y-2.5 min-w-0">
+        <Label className="text-xs font-semibold uppercase tracking-wide block">
           Availability
         </Label>
-        <label className="flex cursor-pointer items-center gap-2 text-sm">
+        <label className="flex min-w-0 cursor-pointer items-center gap-2 text-sm">
           <Checkbox
             checked={filters.inStockOnly}
             onCheckedChange={(v) =>
               onChange({ ...filters, inStockOnly: v === true })
             }
-            className="border-zinc-400 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
+            className="border-zinc-400 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 shrink-0"
           />
-          <span>In stock only</span>
+          <span className="min-w-0">In stock only</span>
         </label>
-        <label className="flex cursor-pointer items-center gap-2 text-sm">
+        <label className="flex min-w-0 cursor-pointer items-center gap-2 text-sm">
           <Checkbox
             checked={filters.onSaleOnly}
             onCheckedChange={(v) =>
               onChange({ ...filters, onSaleOnly: v === true })
             }
-            className="border-zinc-400 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
+            className="border-zinc-400 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 shrink-0"
           />
-          <span>On sale only</span>
+          <span className="min-w-0">On sale only</span>
         </label>
       </div>
 
