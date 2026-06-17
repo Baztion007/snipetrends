@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { Flame, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StarRating } from "./StarRating";
-import { formatPrice, discountPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Product } from "@/lib/types";
 
@@ -92,7 +91,6 @@ export function TrendingRail({ onSelect }: TrendingRailProps) {
               </div>
             ))
           : products.map((p, i) => {
-              const disc = discountPercent(p.price, p.compareAtPrice);
               return (
                 <button
                   key={p.id}
@@ -110,11 +108,6 @@ export function TrendingRail({ onSelect }: TrendingRailProps) {
                       loading="lazy"
                       className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
-                    {disc && (
-                      <span className="absolute right-1.5 top-1.5 rounded-full bg-rose-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
-                        -{disc}%
-                      </span>
-                    )}
                   </div>
                   <div className="flex flex-col gap-1 p-2.5">
                     {p.brand && (
@@ -130,7 +123,6 @@ export function TrendingRail({ onSelect }: TrendingRailProps) {
                       reviewCount={p.reviewCount}
                       size={12}
                     />
-                    <p className="text-sm font-bold">{formatPrice(p.price)}</p>
                   </div>
                 </button>
               );

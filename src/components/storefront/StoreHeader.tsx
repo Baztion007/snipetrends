@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useWishlist } from "@/lib/wishlist-store";
+import { useSiteSettings } from "@/lib/use-site-settings";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
 import type { Category } from "@/lib/types";
@@ -37,6 +38,7 @@ export function StoreHeader({
 }: StoreHeaderProps) {
   const [q, setQ] = useState("");
   const wishCount = useWishlist((s) => s.count());
+  const { siteName } = useSiteSettings();
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,13 +60,13 @@ export function StoreHeader({
           <button
             onClick={goHome}
             className="flex shrink-0 items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
-            aria-label="ShopAffiliate home"
+            aria-label={`${siteName} home`}
           >
             <span className="flex size-8 items-center justify-center rounded-md bg-amber-500 text-zinc-950">
               <ShoppingBag size={18} />
             </span>
             <span className="hidden text-lg font-bold tracking-tight sm:inline">
-              Shop<span className="text-amber-400">Affiliate</span>
+              {siteName}
             </span>
           </button>
 

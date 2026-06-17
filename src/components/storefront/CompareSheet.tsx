@@ -14,7 +14,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { StarRating } from "./StarRating";
 import { useCompare, COMPARE_MAX } from "@/lib/compare-store";
 import { redirectToPartner } from "@/lib/affiliate";
-import { formatPrice, discountPercent } from "@/lib/format";
 import { toast } from "sonner";
 import { X, GitCompareArrows, ExternalLink, Check, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -41,11 +40,10 @@ export function CompareSheet({ open, onOpenChange, onSelect }: CompareSheetProps
     redirectToPartner(p);
   };
 
-  // best value = lowest price among compared items
-  const bestPrice =
-    items.length > 0 ? Math.min(...items.map((p) => p.price)) : 0;
+  // best value = highest rating among compared items
   const bestRating =
     items.length > 0 ? Math.max(...items.map((p) => p.rating)) : 0;
+  void bestRating;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -141,39 +139,6 @@ export function CompareSheet({ open, onOpenChange, onSelect }: CompareSheetProps
                         </td>
                       ))}
                     </tr>
-
-                    <CompareRow
-                      label="Price"
-                      cells={items.map((p) => (
-                        <div key={p.id} className="flex flex-col">
-                          <span className="font-bold">{formatPrice(p.price)}</span>
-                          {p.compareAtPrice && (
-                            <span className="text-xs text-muted-foreground line-through">
-                              {formatPrice(p.compareAtPrice)}
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                      bestIndex={items
-                        .map((p) => p.price)
-                        .reduce(
-                          (best, val, i, arr) =>
-                            val < arr[best] ? i : best,
-                          0
-                        )}
-                    />
-
-                    <CompareRow
-                      label="Discount"
-                      cells={items.map((p) => {
-                        const d = discountPercent(p.price, p.compareAtPrice);
-                        return (
-                          <span key={p.id} className={d ? "font-semibold text-rose-600" : "text-muted-foreground"}>
-                            {d ? `-${d}%` : "—"}
-                          </span>
-                        );
-                      })}
-                    />
 
                     <CompareRow
                       label="Rating"

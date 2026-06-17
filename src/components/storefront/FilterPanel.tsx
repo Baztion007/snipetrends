@@ -93,37 +93,6 @@ export function FilterPanel({
 
       <Separator />
 
-      {/* Price */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <Label className="text-xs font-semibold uppercase tracking-wide">
-            Max Price
-          </Label>
-          <span className="text-sm font-bold text-amber-600">
-            {formatPrice(maxPrice)}
-          </span>
-        </div>
-        <Slider
-          value={[maxPrice]}
-          min={priceBounds.min}
-          max={priceBounds.max}
-          step={10}
-          onValueChange={(v) =>
-            onChange({
-              ...filters,
-              priceMax: v[0] >= priceBounds.max ? null : v[0],
-            })
-          }
-          className="[&_[role=slider]]:bg-amber-500 [&_[role=slider]]:border-amber-500"
-        />
-        <div className="flex justify-between text-[11px] text-muted-foreground">
-          <span>{formatPrice(priceBounds.min)}</span>
-          <span>{formatPrice(priceBounds.max)}</span>
-        </div>
-      </div>
-
-      <Separator />
-
       {/* Rating */}
       <div className="space-y-2.5">
         <Label className="text-xs font-semibold uppercase tracking-wide">

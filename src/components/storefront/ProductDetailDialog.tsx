@@ -15,7 +15,6 @@ import { StarRating } from "./StarRating";
 import { useWishlist } from "@/lib/wishlist-store";
 import { useRecentlyViewed } from "@/lib/recently-viewed-store";
 import { redirectToPartner } from "@/lib/affiliate";
-import { formatPrice, discountPercent } from "@/lib/format";
 import { toast } from "sonner";
 import {
   ExternalLink,
@@ -98,10 +97,6 @@ export function ProductDetailDialog({
     }
   }, [open, product, pushRecent]);
 
-  const discount = product
-    ? discountPercent(product.price, product.compareAtPrice)
-    : null;
-
   const handleViewOnAmazon = async () => {
     if (!product) return;
     setRedirecting(true);
@@ -168,7 +163,6 @@ export function ProductDetailDialog({
               <ProductGallery
                 key={product.id}
                 product={product}
-                discount={discount}
               />
 
               {/* Details */}
@@ -192,22 +186,6 @@ export function ProductDetailDialog({
                     {product.rating.toFixed(1)} of 5
                   </span>
                   <TrustBadge />
-                </div>
-
-                <div className="flex flex-wrap items-end gap-3">
-                  <span className="text-3xl font-bold">
-                    {formatPrice(product.price)}
-                  </span>
-                  {product.compareAtPrice && (
-                    <span className="pb-1 text-sm text-muted-foreground line-through">
-                      {formatPrice(product.compareAtPrice)}
-                    </span>
-                  )}
-                  {discount && (
-                    <Badge className="mb-1 bg-rose-600 text-white">
-                      Save {discount}%
-                    </Badge>
-                  )}
                 </div>
 
                 {(() => {
@@ -391,10 +369,8 @@ export function ProductDetailDialog({
  *  its internal activeImage state resets when switching products. */
 function ProductGallery({
   product,
-  discount,
 }: {
   product: Product;
-  discount: number | null;
 }) {
   const [activeImage, setActiveImage] = useState(0);
 
@@ -433,11 +409,6 @@ function ProductGallery({
             )}
           >
             {product.badge}
-          </span>
-        )}
-        {discount && (
-          <span className="absolute right-3 top-3 rounded-full bg-rose-600 px-2.5 py-1 text-xs font-bold text-white shadow-sm">
-            -{discount}% OFF
           </span>
         )}
       </div>

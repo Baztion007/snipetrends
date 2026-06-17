@@ -11,6 +11,7 @@ export async function GET() {
       amazonBaseUrl: s?.amazonBaseUrl ?? "https://www.amazon.com",
       siteName: s?.siteName ?? "ShopAffiliate",
       contactEmail: s?.contactEmail ?? "",
+      disclosureOverride: s?.disclosureOverride ?? "",
       socialTwitter: s?.socialTwitter ?? null,
       socialInstagram: s?.socialInstagram ?? null,
       socialYoutube: s?.socialYoutube ?? null,

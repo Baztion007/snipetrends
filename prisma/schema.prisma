@@ -93,3 +93,10 @@ model AffiliateClick {
   @@index([productId])
   @@index([createdAt])
 }
+
+// Newsletter subscribers captured from the footer signup form.
+model Subscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+}

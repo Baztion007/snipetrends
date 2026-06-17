@@ -14,6 +14,8 @@ import {
   UserPlus,
   Trash2,
   Users,
+  Mail,
+  Download,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -85,6 +88,55 @@ export function SettingsSection() {
   const [creatingUser, setCreatingUser] = useState(false);
   const [deletingUser, setDeletingUser] = useState<AdminUserRow | null>(null);
   const [deleteUserBusy, setDeleteUserBusy] = useState(false);
+
+  // Newsletter subscribers state
+  interface SubscriberRow {
+    id: string;
+    email: string;
+    createdAt: string;
+  }
+  const [subscribers, setSubscribers] = useState<SubscriberRow[]>([]);
+  const [subsLoading, setSubsLoading] = useState(true);
+  const [subsExporting, setSubsExporting] = useState(false);
+
+  const loadSubscribers = async () => {
+    setSubsLoading(true);
+    try {
+      const res = await fetch("/api/admin/subscribers");
+      const data = await res.json();
+      if (data.subscribers) setSubscribers(data.subscribers);
+    } catch {
+      /* ignore */
+    } finally {
+      setSubsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadSubscribers();
+  }, []);
+
+  const exportSubscribers = async () => {
+    setSubsExporting(true);
+    try {
+      const res = await fetch("/api/admin/subscribers/export");
+      if (!res.ok) throw new Error("Export failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `subscribers-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Subscriber list exported");
+    } catch (e) {
+      toast.error("Export failed", { description: (e as Error).message });
+    } finally {
+      setSubsExporting(false);
+    }
+  };
 
   const loadUsers = async () => {
     setUsersLoading(true);
@@ -641,6 +693,76 @@ export function SettingsSection() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Newsletter subscribers */}
+      <Card className="border-border/60">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Mail className="h-4 w-4 text-amber-500" />
+            Newsletter Subscribers
+            <span className="text-sm font-normal text-muted-foreground">
+              {subscribers.length} total
+            </span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Emails captured from the footer signup form. Export them as CSV to
+            import into your email platform (Mailchimp, ConvertKit, etc.).
+          </p>
+          <div className="flex justify-end">
+            <Button
+              variant="outline"
+              onClick={exportSubscribers}
+              disabled={subsExporting || subscribers.length === 0}
+              className="gap-2"
+            >
+              {subsExporting ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Download className="size-4" />
+              )}
+              Export CSV
+            </Button>
+          </div>
+          {subsLoading ? (
+            <div className="space-y-2">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="h-10 animate-pulse rounded-lg bg-muted" />
+              ))}
+            </div>
+          ) : subscribers.length === 0 ? (
+            <p className="rounded-lg border bg-muted/30 py-6 text-center text-sm text-muted-foreground">
+              No subscribers yet. Signups from the footer form will appear here.
+            </p>
+          ) : (
+            <ScrollArea className="max-h-64 rounded-lg border">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-muted/80 backdrop-blur">
+                  <tr className="text-left text-xs text-muted-foreground">
+                    <th className="px-3 py-2 font-medium">Email</th>
+                    <th className="px-3 py-2 font-medium">Subscribed</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {subscribers.map((s) => (
+                    <tr key={s.id} className="border-t">
+                      <td className="px-3 py-2 font-medium">{s.email}</td>
+                      <td className="px-3 py-2 text-xs text-muted-foreground">
+                        {new Date(s.createdAt).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </ScrollArea>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

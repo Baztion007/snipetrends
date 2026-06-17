@@ -464,3 +464,50 @@ Agent: orchestrator
 
 Stage Summary:
 - Preview fixed (frame-ancestors SAMEORIGIN). All 5 documented improvements shipped: code-split admin, next/image, per-product click drill-down, CSV export, admin user management. Lint clean. All verified via agent-browser.
+
+---
+Task ID: 17 (user request — gallery fix, remove pricing, wire settings, newsletter storage)
+Agent: orchestrator
+
+## 1. Product gallery fix
+- Problem: seed added 3 GENERIC Unsplash stock photos (headphones, watch, etc.) to every product's `images` array, so opening a camera showed camera + unrelated thumbnails.
+- Fix: reset every product's `images` to `JSON.stringify([product.image])` (just the real image). The gallery component now shows only the product's real image (no thumbnail strip since there's just one). Verified: dialog shows 1 main image, 0 thumbnails.
+
+## 2. Removed ALL pricing from public storefront (Amazon Associates compliance)
+Per the user's link to the Amazon Associates Operating Agreement policies, removed every price display from the public-facing storefront:
+- **ProductCard**: removed price, compareAtPrice, and discount-% badge.
+- **ProductDetailDialog**: removed price block, compareAtPrice, "Save X%" badge, and the "-X% OFF" gallery badge.
+- **WishlistSheet**: removed price, compareAtPrice, discount, and the "combined value" total.
+- **CompareSheet**: removed the Price row + Discount row; kept Rating (best-value highlighting is now rating-based, not price-based).
+- **CompareBar** (sticky bottom): removed the price pill on thumbnails.
+- **TrendingRail + RecentlyViewedRail**: removed price + discount badge.
+- **Storefront sort**: removed "Price: Low to High" / "Price: High to Low" options (kept Featured + Top Rated).
+- **FilterPanel**: removed the Max Price slider section.
+- Verified: `document.body.innerText` contains zero "$" signs on the storefront. Admin still shows prices internally for management (not public).
+
+## 3. Wired admin settings to actually take effect (was the core bug)
+**Problem**: SiteSetting fields were saved to DB but NEVER read by the storefront — `siteName`, `contactEmail`, `disclosureOverride`, social URLs were all hardcoded as "ShopAffiliate" / placeholders.
+- Created `src/lib/use-site-settings.ts` — a cached client hook that fetches `/api/settings` once and shares the result across consumers.
+- **StoreHeader**: now uses `siteName` for the logo text + aria-label (was hardcoded "ShopAffiliate"). Verified: changing Site Name in admin → header updates live.
+- **StoreFooter**: now uses `siteName` (logo, copyright, disclosure text), `contactEmail` (Contact/Report-issue toasts), `disclosureOverride` (custom disclosure banner if set, else default), and the 4 social URLs (Twitter/Instagram/YouTube/GitHub — only renders icons for URLs that are set).
+- Added `disclosureOverride` to the public `/api/settings` response.
+- Verified end-to-end: changed siteName via API → storefront header/footer reflected the new name.
+
+## 4. Newsletter email — now actually stored (was a no-op toast)
+**Problem**: the footer signup form just showed a "Subscribed!" toast — the email went nowhere.
+- Added `Subscriber` model to Prisma (id, email @unique, createdAt) + pushed to DB.
+- Created `POST /api/subscribe` — validates email, rate-limited (5/hr/IP to deter list-bombing), upserts to the `Subscriber` table.
+- Created `GET /api/admin/subscribers` (admin list) + `GET /api/admin/subscribers/export` (CSV download).
+- Footer form now POSTs to `/api/subscribe` with a loading spinner; success/error toast.
+- Added a "Newsletter Subscribers" panel to admin Settings: shows total count, a subscriber table (email + date), and an "Export CSV" button.
+- Verified: POSTed a test email → appeared in DB → visible in admin panel → CSV export returns the row.
+- **Answer to user's question**: newsletter emails are now stored in the `Subscriber` DB table and viewable/exportable from Admin → Settings → Newsletter Subscribers. They don't auto-send to an email service — you export the CSV and import it into your email platform (Mailchimp, ConvertKit, etc.).
+
+## 5. Verification
+- `bun run lint` → 0 errors, 0 warnings.
+- Dev server clean; console clean.
+- agent-browser verified: storefront has zero "$" signs; product detail shows 1 real image (0 thumbnails); Site Name ("ShopAffiliate") appears in header; newsletter signup stores email (testuser@example.com visible in admin Settings → Newsletter Subscribers); CSV export returns the row.
+- Also reset the admin password back to `admin123` (it had been changed to newpass123 during earlier QA and the reset didn't persist).
+
+## Answer to "how does Site Name work?"
+Edit Admin → Settings → "Site Name" field → Save. The value is stored in the `SiteSetting` DB table and fetched by the storefront via `/api/settings` on page load. The header logo text, footer brand name, copyright line, and affiliate disclosure all use it. Changes take effect on the next page load (or immediately for new visitors).

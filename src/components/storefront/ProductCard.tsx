@@ -10,7 +10,6 @@ import { HighlightMatch } from "./HighlightMatch";
 import { useWishlist } from "@/lib/wishlist-store";
 import { useCompare, COMPARE_MAX } from "@/lib/compare-store";
 import { redirectToPartner } from "@/lib/affiliate";
-import { formatPrice, discountPercent } from "@/lib/format";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { Product } from "@/lib/types";
@@ -33,7 +32,6 @@ export function ProductCard({ product, onSelect, query = "" }: ProductCardProps)
   const compareToggle = useCompare((s) => s.toggle);
   const isInCompare = useCompare((s) => s.has(product.id));
   const compareFull = useCompare((s) => s.isFull());
-  const discount = discountPercent(product.price, product.compareAtPrice);
   const outOfStock = product.stock <= 0;
 
   const handleViewOnAmazon = (e: React.MouseEvent) => {
@@ -110,11 +108,6 @@ export function ProductCard({ product, onSelect, query = "" }: ProductCardProps)
               {product.badge}
             </span>
           )}
-          {discount && (
-            <span className="absolute right-2 top-2 rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
-              -{discount}%
-            </span>
-          )}
           {outOfStock && (
             <div className="absolute inset-0 flex items-center justify-center bg-background/60">
               <span className="rounded-md bg-zinc-900 px-3 py-1 text-xs font-semibold text-white">
@@ -155,16 +148,6 @@ export function ProductCard({ product, onSelect, query = "" }: ProductCardProps)
             rating={product.rating}
             reviewCount={product.reviewCount}
           />
-          <div className="flex items-baseline gap-2 pt-0.5">
-            <span className="text-lg font-bold text-foreground">
-              {formatPrice(product.price)}
-            </span>
-            {product.compareAtPrice && (
-              <span className="text-xs text-muted-foreground line-through">
-                {formatPrice(product.compareAtPrice)}
-              </span>
-            )}
-          </div>
           <div className="flex items-center gap-2 pt-1.5">
             <Button
               size="sm"

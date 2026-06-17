@@ -11,10 +11,12 @@ import {
   ArrowRight,
   Info,
   ShieldCheck,
+  Loader2,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useSiteSettings } from "@/lib/use-site-settings";
 
 export type FooterNav =
   | "deals"
@@ -76,10 +78,10 @@ const columns: { title: string; links: { label: string; nav: FooterNav }[] }[] =
 ];
 
 const socials = [
-  { icon: Twitter, label: "Twitter", url: "https://twitter.com" },
-  { icon: Instagram, label: "Instagram", url: "https://instagram.com" },
-  { icon: Youtube, label: "YouTube", url: "https://youtube.com" },
-  { icon: Github, label: "GitHub", url: "https://github.com" },
+  { icon: Twitter, label: "Twitter", key: "socialTwitter" as const },
+  { icon: Instagram, label: "Instagram", key: "socialInstagram" as const },
+  { icon: Youtube, label: "YouTube", key: "socialYoutube" as const },
+  { icon: Github, label: "GitHub", key: "socialGithub" as const },
 ];
 
 // Longer informational blurbs shown in a toast for legal/about links.
@@ -98,7 +100,7 @@ const infoText: Partial<Record<FooterNav, { title: string; body: string }>> = {
   },
   contact: {
     title: "Contact us",
-    body: "Email hello@shopaffiliate.example with questions or partnership inquiries.",
+    body: "", // filled dynamically in handleNav
   },
   "affiliate-disclosure": {
     title: "Affiliate disclosure",
@@ -126,7 +128,7 @@ const infoText: Partial<Record<FooterNav, { title: string; body: string }>> = {
   },
   "report-issue": {
     title: "Report an issue",
-    body: "Spotted a broken link or wrong price? Email bugs@shopaffiliate.example. Thanks for helping us improve!",
+    body: "", // filled dynamically in handleNav
   },
   accessibility: {
     title: "Accessibility",
@@ -140,15 +142,39 @@ interface StoreFooterProps {
 
 export function StoreFooter({ onNavigate }: StoreFooterProps) {
   const [email, setEmail] = useState("");
+  const [subscribing, setSubscribing] = useState(false);
+  const settings = useSiteSettings();
+  const { siteName, contactEmail, disclosureOverride, socialTwitter, socialInstagram, socialYoutube, socialGithub } = settings;
+  const socialMap = { socialTwitter, socialInstagram, socialYoutube, socialGithub };
+  const contactInfo = contactEmail || "hello@shopaffiliate.example";
+  const disclosureText = disclosureOverride?.trim()
+    ? disclosureOverride
+    : `As an Amazon Associate, ${siteName} earns from qualifying purchases. Prices and availability are accurate as of the date/time indicated and are subject to change. Any price and availability information displayed on Amazon at the time of purchase will apply.`;
 
-  const subscribe = (e: React.FormEvent) => {
+  const subscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     const value = email.trim();
     if (!value) return;
-    toast.success("Subscribed!", {
-      description: "You'll receive the best deals in your inbox.",
-    });
-    setEmail("");
+    setSubscribing(true);
+    try {
+      const res = await fetch("/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: value }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Subscription failed");
+      toast.success("Subscribed!", {
+        description: "You'll receive the best deals in your inbox.",
+      });
+      setEmail("");
+    } catch (err) {
+      toast.error("Could not subscribe", {
+        description: (err as Error).message,
+      });
+    } finally {
+      setSubscribing(false);
+    }
   };
 
   const handleNav = (nav: FooterNav) => {
@@ -161,7 +187,11 @@ export function StoreFooter({ onNavigate }: StoreFooterProps) {
     // Info/legal links show a toast summary (no dedicated pages exist yet).
     const info = infoText[nav];
     if (info) {
-      toast(info.title, { description: info.body });
+      let body = info.body;
+      if (nav === "contact") body = `Email ${contactInfo} with questions or partnership inquiries.`;
+      if (nav === "report-issue") body = `Spotted a broken link? Email ${contactInfo}. Thanks for helping us improve!`;
+      if (nav === "affiliate-disclosure") body = `As an Amazon Associate, ${siteName} earns from qualifying purchases at no extra cost to you.`;
+      toast(info.title, { description: body });
     }
   };
 
@@ -175,10 +205,7 @@ export function StoreFooter({ onNavigate }: StoreFooterProps) {
             <span className="font-semibold text-zinc-200">
               Affiliate disclosure:
             </span>{" "}
-            As an Amazon Associate, ShopAffiliate earns from qualifying
-            purchases. Prices and availability are accurate as of the date/time
-            indicated and are subject to change. Any price and availability
-            information displayed on Amazon at the time of purchase will apply.
+            {disclosureText}
           </p>
         </div>
       </div>
@@ -192,7 +219,7 @@ export function StoreFooter({ onNavigate }: StoreFooterProps) {
                 <ShoppingBag size={18} />
               </span>
               <span className="text-lg font-bold text-white">
-                Shop<span className="text-amber-400">Affiliate</span>
+                {siteName}
               </span>
             </div>
             <p className="mt-3 max-w-xs text-sm text-zinc-400">
@@ -218,10 +245,15 @@ export function StoreFooter({ onNavigate }: StoreFooterProps) {
               </div>
               <Button
                 type="submit"
+                disabled={subscribing}
                 className="bg-amber-500 text-zinc-950 hover:bg-amber-600"
                 aria-label="Subscribe"
               >
-                <ArrowRight size={16} />
+                {subscribing ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <ArrowRight size={16} />
+                )}
               </Button>
             </form>
           </div>
@@ -250,7 +282,7 @@ export function StoreFooter({ onNavigate }: StoreFooterProps) {
         <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-zinc-800 pt-6 sm:flex-row">
           <div className="flex flex-col items-center gap-1 sm:items-start">
             <p className="text-center text-xs text-zinc-500 sm:text-left">
-              © {new Date().getFullYear()} ShopAffiliate. All rights reserved.
+              © {new Date().getFullYear()} {siteName}. All rights reserved.
             </p>
             <p className="flex items-center gap-1.5 text-center text-[11px] text-zinc-600 sm:text-left">
               <ShieldCheck className="size-3 text-emerald-500" />
@@ -260,11 +292,13 @@ export function StoreFooter({ onNavigate }: StoreFooterProps) {
           </div>
           <div className="flex items-center gap-3">
             {socials.map((s) => {
+              const url = socialMap[s.key];
+              if (!url) return null;
               const Icon = s.icon;
               return (
                 <a
                   key={s.label}
-                  href={s.url}
+                  href={url}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={s.label}

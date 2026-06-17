@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { GitCompareArrows, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCompare, COMPARE_MAX } from "@/lib/compare-store";
-import { formatPrice } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 interface CompareBarProps {
@@ -57,9 +56,6 @@ export function CompareBar({ onOpen }: CompareBarProps) {
                   >
                     <X size={11} />
                   </button>
-                  <p className="absolute -bottom-1 left-1/2 -translate-x-1/2 rounded bg-zinc-900 px-1 text-[9px] font-semibold text-amber-400">
-                    {formatPrice(p.price)}
-                  </p>
                 </div>
               ))}
               {Array.from({ length: COMPARE_MAX - count }).map((_, i) => (

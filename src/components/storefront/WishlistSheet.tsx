@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useWishlist } from "@/lib/wishlist-store";
 import { redirectToPartner } from "@/lib/affiliate";
-import { formatPrice, discountPercent } from "@/lib/format";
 import { toast } from "sonner";
 import { Heart, Trash2, ExternalLink, ArrowRight, X } from "lucide-react";
 import type { Product } from "@/lib/types";
@@ -83,7 +82,6 @@ export function WishlistSheet({ open, onOpenChange, onSelect }: WishlistSheetPro
             <div className="flex-1 overflow-y-auto p-3">
               <ul className="flex flex-col gap-3">
                 {items.map((p) => {
-                  const disc = discountPercent(p.price, p.compareAtPrice);
                   return (
                     <li
                       key={p.id}
@@ -112,21 +110,6 @@ export function WishlistSheet({ open, onOpenChange, onSelect }: WishlistSheetPro
                             {p.brand}
                           </p>
                         )}
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-sm font-semibold">
-                            {formatPrice(p.price)}
-                          </span>
-                          {p.compareAtPrice && (
-                            <span className="text-xs text-muted-foreground line-through">
-                              {formatPrice(p.compareAtPrice)}
-                            </span>
-                          )}
-                          {disc && (
-                            <span className="text-xs font-bold text-rose-600">
-                              -{disc}%
-                            </span>
-                          )}
-                        </div>
                         <div className="mt-auto flex items-center gap-2 pt-1">
                           <Button
                             size="sm"
@@ -157,9 +140,6 @@ export function WishlistSheet({ open, onOpenChange, onSelect }: WishlistSheetPro
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">
                   {items.length} saved {items.length === 1 ? "item" : "items"}
-                </span>
-                <span className="font-semibold">
-                  {formatPrice(items.reduce((s, p) => s + p.price, 0))} combined value
                 </span>
               </div>
               <Separator className="my-2" />

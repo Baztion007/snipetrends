@@ -5,7 +5,6 @@ import { ChevronLeft, ChevronRight, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRecentlyViewed } from "@/lib/recently-viewed-store";
 import { StarRating } from "./StarRating";
-import { formatPrice, discountPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Product } from "@/lib/types";
 
@@ -57,7 +56,6 @@ export function RecentlyViewedRail({ onSelect }: RecentlyViewedRailProps) {
         className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {items.map((p) => {
-          const disc = discountPercent(p.price, p.compareAtPrice);
           return (
             <button
               key={p.id}
@@ -71,11 +69,6 @@ export function RecentlyViewedRail({ onSelect }: RecentlyViewedRailProps) {
                   loading="lazy"
                   className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />
-                {disc && (
-                  <span className="absolute right-1.5 top-1.5 rounded-full bg-rose-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
-                    -{disc}%
-                  </span>
-                )}
               </div>
               <div className="flex flex-col gap-1 p-2.5">
                 {p.brand && (
@@ -87,7 +80,6 @@ export function RecentlyViewedRail({ onSelect }: RecentlyViewedRailProps) {
                   {p.title}
                 </p>
                 <StarRating rating={p.rating} reviewCount={p.reviewCount} size={12} />
-                <p className="text-sm font-bold">{formatPrice(p.price)}</p>
               </div>
             </button>
           );
