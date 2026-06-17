@@ -9,39 +9,37 @@ import {
   Github,
   Mail,
   ArrowRight,
+  Info,
+  ShieldCheck,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
+// Footer links relevant to an Amazon affiliate recommendation site.
+// NOTE: "Affiliate Disclosure" and the bottom-bar disclaimer are required by
+// the Amazon Associates Operating Agreement — do not remove them.
 const columns = [
   {
-    title: "About",
-    links: [
-      "Our story",
-      "Careers",
-      "Press",
-      "Sustainability",
-      "Investor relations",
-    ],
+    title: "Browse",
+    links: ["Today's Deals", "Top Rated", "New Arrivals", "All Categories"],
   },
   {
-    title: "Earn / Affiliate",
+    title: "About",
+    links: ["How we curate", "Our mission", "Editorial guidelines", "Contact us"],
+  },
+  {
+    title: "Disclosure",
     links: [
-      "Become an affiliate",
-      "Affiliate program",
-      "Creator hub",
-      "Commission rates",
-      "Resources",
+      "Affiliate disclosure",
+      "How we make money",
+      "Privacy policy",
+      "Terms of use",
     ],
   },
   {
     title: "Help",
-    links: ["Contact us", "Shipping", "Returns", "Track order", "FAQ"],
-  },
-  {
-    title: "Connect",
-    links: ["Blog", "Newsletter", "Community", "Events", "Partnerships"],
+    links: ["Using this site", "FAQ", "Report an issue", "Accessibility"],
   },
 ];
 
@@ -67,6 +65,22 @@ export function StoreFooter() {
 
   return (
     <footer className="mt-auto bg-zinc-950 text-zinc-300">
+      {/* Affiliate disclosure banner (Amazon Associates requirement) */}
+      <div className="border-b border-zinc-800 bg-zinc-900/50">
+        <div className="mx-auto flex max-w-7xl items-start gap-3 px-4 py-3">
+          <Info className="mt-0.5 size-4 shrink-0 text-amber-500" />
+          <p className="text-xs leading-relaxed text-zinc-400">
+            <span className="font-semibold text-zinc-200">
+              Affiliate disclosure:
+            </span>{" "}
+            As an Amazon Associate, ShopAffiliate earns from qualifying
+            purchases. Prices and availability are accurate as of the date/time
+            indicated and are subject to change. Any price and availability
+            information displayed on Amazon at the time of purchase will apply.
+          </p>
+        </div>
+      </div>
+
       <div className="mx-auto max-w-7xl px-4 py-10">
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-6">
           {/* Brand + newsletter */}
@@ -80,8 +94,9 @@ export function StoreFooter() {
               </span>
             </div>
             <p className="mt-3 max-w-xs text-sm text-zinc-400">
-              Curated affiliate picks from brands you trust. Every purchase
-              supports independent creators.
+              We independently research and recommend the best products. When
+              you buy through our links, we may earn a commission — at no extra
+              cost to you.
             </p>
             <form
               onSubmit={subscribe}
@@ -94,7 +109,7 @@ export function StoreFooter() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Your email"
+                  placeholder="Get the best deals by email"
                   aria-label="Email address"
                   className="border-zinc-700 bg-zinc-900 pl-9 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-amber-500"
                 />
@@ -112,9 +127,7 @@ export function StoreFooter() {
           {/* Link columns */}
           {columns.map((col) => (
             <div key={col.title}>
-              <h3 className="text-sm font-semibold text-white">
-                {col.title}
-              </h3>
+              <h3 className="text-sm font-semibold text-white">{col.title}</h3>
               <ul className="mt-3 flex flex-col gap-2">
                 {col.links.map((l) => (
                   <li key={l}>
@@ -133,10 +146,16 @@ export function StoreFooter() {
         </div>
 
         <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-zinc-800 pt-6 sm:flex-row">
-          <p className="text-center text-xs text-zinc-500 sm:text-left">
-            © {new Date().getFullYear()} ShopAffiliate. All rights reserved.
-            As an Amazon Associate we earn from qualifying purchases.
-          </p>
+          <div className="flex flex-col items-center gap-1 sm:items-start">
+            <p className="text-center text-xs text-zinc-500 sm:text-left">
+              © {new Date().getFullYear()} ShopAffiliate. All rights reserved.
+            </p>
+            <p className="flex items-center gap-1.5 text-center text-[11px] text-zinc-600 sm:text-left">
+              <ShieldCheck className="size-3 text-emerald-500" />
+              Amazon and the Amazon logo are trademarks of Amazon.com, Inc. or
+              its affiliates.
+            </p>
+          </div>
           <div className="flex items-center gap-3">
             {socials.map((s) => {
               const Icon = s.icon;
@@ -158,3 +177,5 @@ export function StoreFooter() {
     </footer>
   );
 }
+
+export default StoreFooter;

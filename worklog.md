@@ -235,3 +235,27 @@ Task: User clarified this is an Amazon AFFILIATE site (not an e-commerce shop). 
 
 Stage Summary:
 - E-commerce features (cart, checkout, orders, revenue dashboard, add-to-cart) fully removed. Site is now a correct Amazon affiliate storefront: product curation + "View on Amazon" click-throughs (tracked) + wishlist/compare/recently-viewed + click-focused admin analytics. All verified via agent-browser. Lint clean.
+
+---
+Task ID: 12 (user correction — footer cleanup)
+Agent: orchestrator
+Task: Remove irrelevant corporate/e-commerce footer menu items; add affiliate-relevant content.
+
+## What was removed (per user request)
+All 15 listed items: "Earn / Affiliate" section (Become an affiliate, Affiliate program, Creator hub, Commission rates, Resources), Community, Events, Partnerships, Shipping, Returns, Track order, Careers, Press, Sustainability, Investor relations.
+
+## What was added (affiliate-relevant)
+- **Affiliate disclosure banner** (top of footer, amber Info icon) — Amazon Associates Operating Agreement REQUIRES this. States "As an Amazon Associate, ShopAffiliate earns from qualifying purchases" + price/availability disclaimer.
+- **Browse**: Today's Deals, Top Rated, New Arrivals, All Categories (navigation that maps to existing filters).
+- **About**: How we curate, Our mission, Editorial guidelines, Contact us.
+- **Disclosure**: Affiliate disclosure, How we make money, Privacy policy, Terms of use.
+- **Help**: Using this site, FAQ, Report an issue, Accessibility.
+- Refined brand copy: "We independently research and recommend the best products. When you buy through our links, we may earn a commission — at no extra cost to you."
+- Added Amazon trademark notice in bottom bar: "Amazon and the Amazon logo are trademarks of Amazon.com, Inc. or its affiliates." (also an Amazon Associates compliance requirement).
+
+## Verification
+- `bun run lint` → 0 errors, 0 warnings.
+- agent-browser: footer renders with new content; all 15 removed items confirmed GONE; no console errors. Screenshot saved to /tmp/footer.png.
+
+Stage Summary:
+- Footer is now legally compliant (affiliate disclosure + trademark notice) and contains only affiliate-relevant links. No more corporate/e-commerce boilerplate.
