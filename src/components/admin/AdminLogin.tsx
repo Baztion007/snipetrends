@@ -66,7 +66,7 @@ export function AdminLogin({ onLoggedIn, onBack }: AdminLoginProps) {
 
       <button
         onClick={onBack}
-        className="absolute top-5 left-5 z-10 inline-flex items-center gap-2 text-sm text-zinc-300 hover:text-white transition-colors"
+        className="absolute top-5 left-5 z-30 inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm text-zinc-300 hover:text-white hover:bg-zinc-800/60 transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
         Back to store
@@ -166,17 +166,8 @@ export function AdminLogin({ onLoggedIn, onBack }: AdminLoginProps) {
                 )}
               </Button>
             </form>
-
-            <div className="mt-6 rounded-lg border border-zinc-800 bg-zinc-950/40 px-4 py-3 text-xs text-zinc-500">
-              <p className="font-medium text-zinc-400 mb-1">Demo credentials</p>
-              <p>
-                Username:{" "}
-                <code className="text-amber-400 font-mono">admin</code> · Password:{" "}
-                <code className="text-amber-400 font-mono">admin123</code>
-              </p>
-            </div>
-          </div>
-        </motion.div>
+        </div>
+      </motion.div>
       </div>
     </div>
   );
