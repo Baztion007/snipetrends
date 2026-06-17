@@ -136,50 +136,59 @@ export function ProductCard({ product, onSelect, query = "" }: ProductCardProps)
         </div>
 
         {/* Body */}
-        <div className="flex flex-col gap-1.5 p-3">
+        <div className="flex flex-col gap-2 p-3.5">
           {product.brand && (
-            <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
               <HighlightMatch text={product.brand} query={query} />
             </p>
           )}
           <h3 className="line-clamp-2 min-h-[2.5rem] text-sm font-medium leading-snug">
             <HighlightMatch text={product.title} query={query} />
           </h3>
-          <StarRating
-            rating={product.rating}
-            reviewCount={product.reviewCount}
-          />
-          <div className="flex items-center gap-2 pt-1.5">
+          <div className="flex items-center justify-between gap-2">
+            <StarRating
+              rating={product.rating}
+              reviewCount={product.reviewCount}
+            />
+            {outOfStock ? (
+              <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-rose-500">Out of stock</span>
+            ) : product.stock < 50 ? (
+              <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-amber-600">Low stock</span>
+            ) : null}
+          </div>
+          <div className="flex items-center gap-1.5 pt-1">
             <Button
               size="sm"
               onClick={handleViewOnAmazon}
-              className="h-9 flex-1 gap-1.5 bg-amber-500 text-white hover:bg-amber-600"
+              className="h-9 flex-1 gap-1.5 bg-amber-500 text-white hover:bg-amber-600 shadow-sm"
             >
               <ExternalLink size={14} />
               View on Amazon
             </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleView}
-              className="h-9 w-9 px-0"
-              aria-label={`View ${product.title} details`}
-            >
-              <Eye size={14} />
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleCompare}
-              className={cn(
-                "h-9 w-9 px-0",
-                isInCompare && "border-amber-500 bg-amber-500/10 text-amber-600 hover:bg-amber-500/20"
-              )}
-              aria-label={`${isInCompare ? "Remove from" : "Add to"} compare`}
-              aria-pressed={isInCompare}
-            >
-              <GitCompareArrows size={14} />
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleView}
+                className="h-9 w-9 px-0"
+                aria-label={`View ${product.title} details`}
+              >
+                <Eye size={14} />
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleCompare}
+                className={cn(
+                  "h-9 w-9 px-0",
+                  isInCompare && "border-amber-500 bg-amber-500/10 text-amber-600 hover:bg-amber-500/20"
+                )}
+                aria-label={`${isInCompare ? "Remove from" : "Add to"} compare`}
+                aria-pressed={isInCompare}
+              >
+                <GitCompareArrows size={14} />
+              </Button>
+            </div>
           </div>
         </div>
       </Card>
