@@ -259,3 +259,59 @@ All 15 listed items: "Earn / Affiliate" section (Become an affiliate, Affiliate 
 
 Stage Summary:
 - Footer is now legally compliant (affiliate disclosure + trademark notice) and contains only affiliate-relevant links. No more corporate/e-commerce boilerplate.
+
+---
+Task ID: 13 (user request — fix all links + improvements)
+Agent: orchestrator
+Task: Ensure all links are functional; identify and implement other improvements.
+
+## 1. Link audit findings
+- Footer: all 12 footer links were dead `href="#"` placeholders (Browse/About/Disclosure/Help columns) + 4 social icons pointed nowhere.
+- Hero carousel: all 3 CTAs ("Shop deals", "Learn more", "Explore new") only advanced to the next slide — did nothing useful.
+- Header quick-links, search, admin, wishlist, theme toggle, compare, product cards/detail, wishlist/compare sheets — all already functional.
+
+## 2. Fixes applied
+
+### Footer links wired (`StoreFooter.tsx`)
+- Added `FooterNav` type + `onNavigate` prop. Browse links (Today's Deals, Top Rated, New Arrivals, All Categories) delegate to parent → real filter/sort actions + smooth-scroll to product grid. Info/legal links (How we curate, Our mission, Editorial guidelines, Contact, Affiliate disclosure, How we make money, Privacy, Terms, Using this site, FAQ, Report an issue, Accessibility) show an informative toast summarizing the policy (since no dedicated pages exist yet).
+- Social icons now point to real URLs (twitter.com, instagram.com, youtube.com, github.com) with `target=_blank rel=noopener`.
+- Links converted from `<a href="#">` to `<button>` for action links (semantically correct).
+- Result: **0 dead `href="#"` links** on the entire page.
+
+### Hero carousel CTAs wired (`HeroCarousel.tsx`)
+- Added `HeroAction` type + `onAction` prop. "Shop deals" → filters to Today's Deals; "Learn more" → Top Rated sort; "Explore new" → featured sort. All smooth-scroll to the product grid.
+- Removed the old behavior where CTAs just advanced the slide.
+
+### Storefront wiring (`Storefront.tsx`)
+- Added `handleHeroAction` + `handleFooterNav` handlers that map actions to search/category/sort state changes.
+- Added `scrollToGrid()` helper using `getElementById('product-grid-top').scrollIntoView({behavior:'smooth'})`.
+- Passed `onAction` to HeroCarousel and `onNavigate` to StoreFooter.
+
+## 3. Other improvements added
+
+### Back-to-top button (`BackToTop.tsx`)
+- Floating amber-ringed button (bottom-right) that appears after scrolling 600px down; smooth-scrolls to top. Fades in/out with framer-motion. Doesn't overlap the CompareBar (which is bottom-center).
+- Wired into Storefront.
+
+## 4. Verification (agent-browser)
+- Hero "Shop deals" CTA → filtered to 4 deals + scrolled to grid ✓
+- Footer "Top Rated" → sort changed to "Top Rated", 12 results ✓
+- Footer "FAQ" → info toast with FAQ content ✓
+- Footer "Affiliate disclosure" → info toast ✓
+- Social icons → real external URLs (target=_blank) ✓
+- Back-to-top → appears on scroll, scrolls to Y=0 on click ✓
+- **0 dead `href="#"` links** on the entire page ✓
+- `bun run lint` → 0 errors, 0 warnings. Dev log + console clean.
+
+## 5. Further improvement ideas (for next rounds)
+- Search results: highlight the matched query term in product titles.
+- Product detail: "Share" button (copy affiliate link / native share API).
+- Storefront: a "Trending now" rail driven by recent click volume (admin already tracks clicks).
+- Admin: per-product click detail drill-down from the dashboard's Top-by-Clicks list.
+- Accessibility: add `skip-to-content` link as the first focusable element.
+- SEO: per-category meta titles/descriptions + JSON-LD Product structured data.
+- Performance: lazy-load below-the-fold product images with `loading="lazy"` (already on cards; verify on rails).
+- Affiliate compliance: add a visible "Why you can trust us" tooltip near ratings.
+
+Stage Summary:
+- All footer + hero links now functional. Dead links: 0. Added back-to-top. Lint clean. Verified end-to-end via agent-browser.

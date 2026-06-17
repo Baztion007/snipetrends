@@ -6,12 +6,17 @@ import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+export interface HeroAction {
+  type: "deals" | "top-rated" | "new";
+}
+
 interface Slide {
   title: string;
   subtitle: string;
   cta: string;
   gradient: string;
   badge: string;
+  action: HeroAction["type"];
 }
 
 const slides: Slide[] = [
@@ -22,6 +27,7 @@ const slides: Slide[] = [
     cta: "Shop deals",
     gradient: "from-amber-500 via-orange-500 to-rose-500",
     badge: "Limited time",
+    action: "deals",
   },
   {
     title: "Earn While You Shop",
@@ -30,25 +36,28 @@ const slides: Slide[] = [
     cta: "Learn more",
     gradient: "from-emerald-500 via-teal-500 to-emerald-600",
     badge: "Affiliate program",
+    action: "top-rated",
   },
   {
     title: "New Arrivals Weekly",
     subtitle:
-      "Fresh drops from emerging brands. Be the first to discover what’s trending right now.",
+      "Fresh drops from emerging brands. Be the first to discover what's trending right now.",
     cta: "Explore new",
     gradient: "from-rose-500 via-amber-400 to-orange-500",
     badge: "Just landed",
+    action: "new",
   },
 ];
 
-export function HeroCarousel() {
+interface HeroCarouselProps {
+  onAction: (action: HeroAction) => void;
+}
+
+export function HeroCarousel({ onAction }: HeroCarouselProps) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
 
-  const next = useCallback(
-    () => setIndex((i) => (i + 1) % slides.length),
-    []
-  );
+  const next = useCallback(() => setIndex((i) => (i + 1) % slides.length), []);
 
   useEffect(() => {
     if (paused) return;
@@ -57,6 +66,10 @@ export function HeroCarousel() {
   }, [paused, next]);
 
   const slide = slides[index];
+
+  const handleCta = () => {
+    onAction({ type: slide.action });
+  };
 
   return (
     <section
@@ -95,7 +108,7 @@ export function HeroCarousel() {
               <Button
                 className="w-fit bg-white text-zinc-900 hover:bg-white/90"
                 size="lg"
-                onClick={next}
+                onClick={handleCta}
               >
                 {slide.cta}
                 <ArrowRight size={16} />
@@ -114,9 +127,7 @@ export function HeroCarousel() {
               aria-current={i === index}
               className={cn(
                 "h-2 rounded-full transition-all",
-                i === index
-                  ? "w-6 bg-white"
-                  : "w-2 bg-white/50 hover:bg-white/80"
+                i === index ? "w-6 bg-white" : "w-2 bg-white/50 hover:bg-white/80"
               )}
             />
           ))}
@@ -125,3 +136,5 @@ export function HeroCarousel() {
     </section>
   );
 }
+
+export default HeroCarousel;

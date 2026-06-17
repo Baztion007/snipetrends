@@ -16,41 +16,129 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
-// Footer links relevant to an Amazon affiliate recommendation site.
-// NOTE: "Affiliate Disclosure" and the bottom-bar disclaimer are required by
-// the Amazon Associates Operating Agreement — do not remove them.
-const columns = [
+export type FooterNav =
+  | "deals"
+  | "top-rated"
+  | "new"
+  | "all-categories"
+  | "how-we-curate"
+  | "our-mission"
+  | "editorial-guidelines"
+  | "contact"
+  | "affiliate-disclosure"
+  | "how-we-make-money"
+  | "privacy"
+  | "terms"
+  | "using-this-site"
+  | "faq"
+  | "report-issue"
+  | "accessibility";
+
+// Affiliate-relevant footer. "Affiliate disclosure" and the bottom-bar
+// disclaimer are required by the Amazon Associates Operating Agreement.
+const columns: { title: string; links: { label: string; nav: FooterNav }[] }[] = [
   {
     title: "Browse",
-    links: ["Today's Deals", "Top Rated", "New Arrivals", "All Categories"],
+    links: [
+      { label: "Today's Deals", nav: "deals" },
+      { label: "Top Rated", nav: "top-rated" },
+      { label: "New Arrivals", nav: "new" },
+      { label: "All Categories", nav: "all-categories" },
+    ],
   },
   {
     title: "About",
-    links: ["How we curate", "Our mission", "Editorial guidelines", "Contact us"],
+    links: [
+      { label: "How we curate", nav: "how-we-curate" },
+      { label: "Our mission", nav: "our-mission" },
+      { label: "Editorial guidelines", nav: "editorial-guidelines" },
+      { label: "Contact us", nav: "contact" },
+    ],
   },
   {
     title: "Disclosure",
     links: [
-      "Affiliate disclosure",
-      "How we make money",
-      "Privacy policy",
-      "Terms of use",
+      { label: "Affiliate disclosure", nav: "affiliate-disclosure" },
+      { label: "How we make money", nav: "how-we-make-money" },
+      { label: "Privacy policy", nav: "privacy" },
+      { label: "Terms of use", nav: "terms" },
     ],
   },
   {
     title: "Help",
-    links: ["Using this site", "FAQ", "Report an issue", "Accessibility"],
+    links: [
+      { label: "Using this site", nav: "using-this-site" },
+      { label: "FAQ", nav: "faq" },
+      { label: "Report an issue", nav: "report-issue" },
+      { label: "Accessibility", nav: "accessibility" },
+    ],
   },
 ];
 
 const socials = [
-  { icon: Twitter, label: "Twitter" },
-  { icon: Instagram, label: "Instagram" },
-  { icon: Youtube, label: "YouTube" },
-  { icon: Github, label: "GitHub" },
+  { icon: Twitter, label: "Twitter", url: "https://twitter.com" },
+  { icon: Instagram, label: "Instagram", url: "https://instagram.com" },
+  { icon: Youtube, label: "YouTube", url: "https://youtube.com" },
+  { icon: Github, label: "GitHub", url: "https://github.com" },
 ];
 
-export function StoreFooter() {
+// Longer informational blurbs shown in a toast for legal/about links.
+const infoText: Partial<Record<FooterNav, { title: string; body: string }>> = {
+  "how-we-curate": {
+    title: "How we curate",
+    body: "Our editors research and test products across categories. We prioritize verified reviews, value, and long-term reliability.",
+  },
+  "our-mission": {
+    title: "Our mission",
+    body: "To help you make confident buying decisions by surfacing the best products — without the noise.",
+  },
+  "editorial-guidelines": {
+    title: "Editorial guidelines",
+    body: "Recommendations are independent. Affiliate relationships never influence ratings or placement.",
+  },
+  contact: {
+    title: "Contact us",
+    body: "Email hello@shopaffiliate.example with questions or partnership inquiries.",
+  },
+  "affiliate-disclosure": {
+    title: "Affiliate disclosure",
+    body: "As an Amazon Associate, ShopAffiliate earns from qualifying purchases at no extra cost to you.",
+  },
+  "how-we-make-money": {
+    title: "How we make money",
+    body: "We earn a small commission when you buy through our links. This never affects the price you pay.",
+  },
+  privacy: {
+    title: "Privacy policy",
+    body: "We only store what's needed to run the site (cart, wishlist in your browser). No third-party tracking beyond analytics.",
+  },
+  terms: {
+    title: "Terms of use",
+    body: "Content is for general information. Prices and availability are set by Amazon and may change.",
+  },
+  "using-this-site": {
+    title: "Using this site",
+    body: "Browse, filter, and compare. Click 'View on Amazon' on any product to complete your purchase on Amazon.",
+  },
+  faq: {
+    title: "FAQ",
+    body: "Q: Do I pay more? A: No — the price is identical. Q: Who handles shipping? A: Amazon, with Prime benefits.",
+  },
+  "report-issue": {
+    title: "Report an issue",
+    body: "Spotted a broken link or wrong price? Email bugs@shopaffiliate.example. Thanks for helping us improve!",
+  },
+  accessibility: {
+    title: "Accessibility",
+    body: "We aim for WCAG 2.1 AA. Keyboard navigation, ARIA labels, and contrast are prioritized throughout.",
+  },
+};
+
+interface StoreFooterProps {
+  onNavigate?: (nav: FooterNav) => void;
+}
+
+export function StoreFooter({ onNavigate }: StoreFooterProps) {
   const [email, setEmail] = useState("");
 
   const subscribe = (e: React.FormEvent) => {
@@ -61,6 +149,20 @@ export function StoreFooter() {
       description: "You'll receive the best deals in your inbox.",
     });
     setEmail("");
+  };
+
+  const handleNav = (nav: FooterNav) => {
+    // Browse links delegate to the parent for real filtering actions.
+    const browseNavs: FooterNav[] = ["deals", "top-rated", "new", "all-categories"];
+    if (browseNavs.includes(nav)) {
+      onNavigate?.(nav);
+      return;
+    }
+    // Info/legal links show a toast summary (no dedicated pages exist yet).
+    const info = infoText[nav];
+    if (info) {
+      toast(info.title, { description: info.body });
+    }
   };
 
   return (
@@ -130,14 +232,14 @@ export function StoreFooter() {
               <h3 className="text-sm font-semibold text-white">{col.title}</h3>
               <ul className="mt-3 flex flex-col gap-2">
                 {col.links.map((l) => (
-                  <li key={l}>
-                    <a
-                      href="#"
-                      onClick={(e) => e.preventDefault()}
-                      className="text-sm text-zinc-400 transition-colors hover:text-amber-400"
+                  <li key={l.label}>
+                    <button
+                      type="button"
+                      onClick={() => handleNav(l.nav)}
+                      className="text-left text-sm text-zinc-400 transition-colors hover:text-amber-400"
                     >
-                      {l}
-                    </a>
+                      {l.label}
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -162,8 +264,9 @@ export function StoreFooter() {
               return (
                 <a
                   key={s.label}
-                  href="#"
-                  onClick={(e) => e.preventDefault()}
+                  href={s.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   aria-label={s.label}
                   className="text-zinc-400 transition-colors hover:text-amber-400"
                 >

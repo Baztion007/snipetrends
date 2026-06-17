@@ -2,15 +2,16 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { StoreHeader, DEALS_SENTINEL } from "./StoreHeader";
-import { HeroCarousel } from "./HeroCarousel";
+import { HeroCarousel, type HeroAction } from "./HeroCarousel";
 import { DealsRail } from "./DealsRail";
 import { ProductGrid } from "./ProductGrid";
-import { StoreFooter } from "./StoreFooter";
+import { StoreFooter, type FooterNav } from "./StoreFooter";
 import { ProductDetailDialog } from "./ProductDetailDialog";
 import { WishlistSheet } from "./WishlistSheet";
 import { RecentlyViewedRail } from "./RecentlyViewedRail";
 import { CompareBar } from "./CompareBar";
 import { CompareSheet } from "./CompareSheet";
+import { BackToTop } from "./BackToTop";
 import {
   FilterPanel,
   applyFilters,
@@ -125,6 +126,64 @@ export function Storefront({ onOpenAdmin }: StorefrontProps) {
     setFilters(DEFAULT_FILTERS);
   }, []);
 
+  // Drive the product view from hero CTAs + footer browse links.
+  const scrollToGrid = () => {
+    // Small delay so the grid re-renders before scrolling.
+    setTimeout(() => {
+      document.getElementById("product-grid-top")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 60);
+  };
+
+  const handleHeroAction = useCallback(
+    (action: HeroAction) => {
+      setLoading(true);
+      setSearchQuery("");
+      if (action.type === "deals") {
+        setActiveCategory(DEALS_SENTINEL);
+        setSort("featured");
+      } else if (action.type === "top-rated") {
+        setActiveCategory(null);
+        setSort("rating");
+      } else if (action.type === "new") {
+        setActiveCategory(null);
+        setSort("featured");
+        setFilters((f) => ({ ...f, onSaleOnly: false }));
+      }
+      scrollToGrid();
+    },
+    []
+  );
+
+  const handleFooterNav = useCallback(
+    (nav: FooterNav) => {
+      setLoading(true);
+      setSearchQuery("");
+      switch (nav) {
+        case "deals":
+          setActiveCategory(DEALS_SENTINEL);
+          setSort("featured");
+          break;
+        case "top-rated":
+          setActiveCategory(null);
+          setSort("rating");
+          break;
+        case "new":
+          setActiveCategory(null);
+          setSort("featured");
+          break;
+        case "all-categories":
+          setActiveCategory(null);
+          setSort("featured");
+          break;
+      }
+      scrollToGrid();
+    },
+    []
+  );
+
   // Client-side filtering on the fetched products.
   const filteredProducts = useMemo(
     () => applyFilters(products, filters),
@@ -159,7 +218,7 @@ export function Storefront({ onOpenAdmin }: StorefrontProps) {
       />
 
       <main className="flex-1">
-        {showChrome && <HeroCarousel />}
+        {showChrome && <HeroCarousel onAction={handleHeroAction} />}
 
         {showChrome && deals.length > 0 && !loading && (
           <DealsRail products={deals} onSelect={setSelected} />
@@ -254,7 +313,7 @@ export function Storefront({ onOpenAdmin }: StorefrontProps) {
         </div>
 
         {/* Body: sidebar filters + grid */}
-        <div className="mx-auto flex max-w-7xl gap-6 px-3 py-6 sm:px-4">
+        <div id="product-grid-top" className="mx-auto flex max-w-7xl gap-6 px-3 py-6 sm:px-4">
           {/* Desktop filter sidebar */}
           <aside className="hidden w-64 shrink-0 lg:block">
             <div className="sticky top-[170px] rounded-xl border bg-card p-4">
@@ -300,7 +359,7 @@ export function Storefront({ onOpenAdmin }: StorefrontProps) {
         {showChrome && <RecentlyViewedRail onSelect={setSelected} />}
       </main>
 
-      <StoreFooter />
+      <StoreFooter onNavigate={handleFooterNav} />
 
       <ProductDetailDialog
         product={selected}
@@ -317,6 +376,7 @@ export function Storefront({ onOpenAdmin }: StorefrontProps) {
         onOpenChange={setCompareOpen}
         onSelect={setSelected}
       />
+      <BackToTop />
     </div>
   );
 }
