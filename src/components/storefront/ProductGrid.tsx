@@ -11,6 +11,7 @@ interface ProductGridProps {
   loading: boolean;
   onSelect: (product: Product) => void;
   onClear?: () => void;
+  query?: string;
 }
 
 export function ProductGrid({
@@ -18,6 +19,7 @@ export function ProductGrid({
   loading,
   onSelect,
   onClear,
+  query = "",
 }: ProductGridProps) {
   if (loading) {
     return (
@@ -70,7 +72,7 @@ export function ProductGrid({
     <div className="mx-auto max-w-7xl px-3 py-6 sm:px-4">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
         {products.map((p) => (
-          <ProductCard key={p.id} product={p} onSelect={onSelect} />
+          <ProductCard key={p.id} product={p} onSelect={onSelect} query={query} />
         ))}
       </div>
     </div>

@@ -12,6 +12,7 @@ import { RecentlyViewedRail } from "./RecentlyViewedRail";
 import { CompareBar } from "./CompareBar";
 import { CompareSheet } from "./CompareSheet";
 import { BackToTop } from "./BackToTop";
+import { TrendingRail } from "./TrendingRail";
 import {
   FilterPanel,
   applyFilters,
@@ -208,6 +209,13 @@ export function Storefront({ onOpenAdmin }: StorefrontProps) {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      {/* Accessibility: skip-to-content link (first focusable element) */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-amber-500 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-zinc-950 focus:shadow-lg"
+      >
+        Skip to products
+      </a>
       <StoreHeader
         onOpenAdmin={onOpenAdmin}
         onOpenWishlist={() => setWishlistOpen(true)}
@@ -217,8 +225,10 @@ export function Storefront({ onOpenAdmin }: StorefrontProps) {
         onCategory={handleCategory}
       />
 
-      <main className="flex-1">
+      <main className="flex-1" id="main-content">
         {showChrome && <HeroCarousel onAction={handleHeroAction} />}
+
+        {showChrome && <TrendingRail onSelect={setSelected} />}
 
         {showChrome && deals.length > 0 && !loading && (
           <DealsRail products={deals} onSelect={setSelected} />
@@ -351,6 +361,7 @@ export function Storefront({ onOpenAdmin }: StorefrontProps) {
               loading={loading}
               onSelect={setSelected}
               onClear={handleClear}
+              query={searchQuery}
             />
           </div>
         </div>

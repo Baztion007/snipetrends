@@ -30,8 +30,10 @@ import {
   Tag,
   BarChart3,
   Loader2,
+  Share2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TrustBadge } from "./TrustBadge";
 import type { Product } from "@/lib/types";
 
 const badgeStyles: Record<string, string> = {
@@ -115,6 +117,34 @@ export function ProductDetailDialog({
     });
   };
 
+  const handleShare = async () => {
+    if (!product) return;
+    const url = typeof window !== "undefined" ? window.location.href : "";
+    const shareData = {
+      title: product.title,
+      text: `Check out ${product.title} on ShopAffiliate`,
+      url,
+    };
+    // Prefer the native Web Share API (mobile / supported browsers).
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch {
+        /* user cancelled — fall through to clipboard */
+      }
+    }
+    // Fallback: copy the current URL to clipboard.
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copied", {
+        description: "Share this page with friends!",
+      });
+    } catch {
+      toast.error("Could not copy link");
+    }
+  };
+
   return (
     <Dialog
       open={open}
@@ -160,6 +190,7 @@ export function ProductDetailDialog({
                   <span className="text-xs text-muted-foreground">
                     {product.rating.toFixed(1)} of 5
                   </span>
+                  <TrustBadge />
                 </div>
 
                 <div className="flex flex-wrap items-end gap-3">
@@ -320,6 +351,14 @@ export function ProductDetailDialog({
                       className={cn(isWishlisted && "fill-rose-500 text-rose-500")}
                     />
                     {isWishlisted ? "Saved" : "Save"}
+                  </Button>
+                  <Button
+                    onClick={handleShare}
+                    variant="outline"
+                    className="h-11 w-11 px-0"
+                    aria-label="Share product"
+                  >
+                    <Share2 size={16} />
                   </Button>
                 </div>
 

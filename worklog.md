@@ -315,3 +315,63 @@ Task: Ensure all links are functional; identify and implement other improvements
 
 Stage Summary:
 - All footer + hero links now functional. Dead links: 0. Added back-to-top. Lint clean. Verified end-to-end via agent-browser.
+
+---
+Task ID: 14 (user request — all improvements + production readiness: WCAG, SEO/AEO, security)
+Agent: orchestrator
+Task: Tackle all suggested improvements; ensure WCAG/accessibility, SEO/AEO, security hardening; assess production readiness.
+
+## 1. Security hardening
+- **Rate limiting** (`src/lib/rate-limit.ts`): in-memory sliding-window limiter. Login: 5 attempts/15min/IP (brute-force). Track-click: 60/10min/IP (click-fraud). Returns 429 with Retry-After + X-RateLimit-* headers. Verified: 6th wrong login → 429 with `Retry-After: 888`.
+- **Input validation** (`src/lib/validate.ts`): isNonEmptyString, isPositiveNumber, isCuid, isSafeUrl (http/https only — blocks javascript:/data: injection), sanitizeString (length caps), sanitizeHeader (strips CR/LF control chars for log-injection prevention).
+- **Login hardening**: credential length caps (200 chars); constant-time-ish path (always calls verifyPassword even for nonexistent users → prevents user-enumeration timing attacks).
+- **Track-click hardening**: validates productId is a cuid; validates stored affiliateUrl is http(s) before returning it; sanitizes IP/UA/referrer; only selects the columns it needs.
+- **Admin products POST hardening**: validates title/image/price/categoryId/affiliateUrl with safe-url + cuid checks; badge allowlist (deal/bestseller/new only); rating range (0-5), non-negative stock/reviews; `take: 100` on list queries to prevent unbounded result sets.
+- **Security headers** (`next.config.ts`): CSP (default-src 'self', frame-ancestors 'none', object-src 'none', form-action 'self'), X-Content-Type-Options nosniff, X-Frame-Options DENY, X-XSS-Protection, Permissions-Policy (camera/mic/geo/FLoC disabled), Referrer-Policy strict-origin-when-cross-origin, HSTS (1yr + preload), X-Powered-By removed, Cache-Control no-store on /api/*. Verified live via curl.
+- **Build strictness**: `reactStrictMode: true`; `typescript.ignoreBuildErrors: false`; `eslint.ignoreDuringBuilds: false` (was ignoring build errors — a production risk).
+
+## 2. SEO / AEO optimization
+- **Metadata** (`layout.tsx`): metadataBase, title template, rich description, keywords, canonical, robots directives (index+follow, large image preview), Open Graph (type/url/locale/siteName), Twitter card (summary_large_image).
+- **Structured data (JSON-LD)**: Organization schema + WebSite schema with SearchAction (enables Google site-search box + AEO). Emitted as <script type="application/ld+json"> in <head>. Verified in HTML source.
+- **`robots.ts`**: programmatic — allows all crawlers on /, disallows /api/admin/, declares Host + Sitemap. Removed the conflicting static `public/robots.txt`. Verified live.
+- **`sitemap.ts`**: dynamic — home entry (priority 1, daily) + per-category entries (priority 0.7, weekly) pulled from DB. Verified live (200).
+
+## 3. Accessibility (WCAG)
+- **Skip-to-content link**: first focusable element; `sr-only` until focused, then visible amber pill. Jumps to `#main-content`. Verified present.
+- **Semantic HTML**: `<main>`, `<header>`, `<footer>`, `<section aria-label>`, `<nav>`, headings hierarchy.
+- **ARIA**: aria-labels on all icon-only buttons, aria-pressed on toggle buttons (wishlist/compare), aria-live on qty/toasts, role=dialog with sr-only title/description.
+- **Focus management**: dialogs/sheets manage focus; skip-link focus styles use high-contrast amber.
+- **Color**: theme uses token-based colors with dark-mode support; amber CTAs on zinc meet contrast; muted-foreground kept above 4.5:1.
+- **Keyboard**: all interactive elements reachable via Tab; Enter/Space opens product cards; Escape closes dialogs/sheets.
+
+## 4. Suggested improvements — all implemented
+1. **Search term highlighting** (`HighlightMatch.tsx`): wraps matches in <mark> (amber). Wired into ProductCard title + brand; ProductGrid passes the active query down. Verified: searching "headphones" highlights "Headphones" in the matching card.
+2. **Trending Now rail** (`TrendingRail.tsx` + `/api/trending`): top 10 products by affiliate clicks in the last 7 days; falls back to top-rated when no click data. Numbered rank badges (rose), flame icon, horizontal scroll. Verified: renders on home with ranked products.
+3. **Share button** in product detail: uses native Web Share API when available (mobile), falls back to clipboard copy with toast. Verified: "Link copied" toast.
+4. **"Why trust us" TrustBadge** (`TrustBadge.tsx`): inline "Verified" pill near ratings with a tooltip explaining editorial independence. Verified present in product detail.
+
+## 5. Verification
+- `bun run lint` → 0 errors, 0 warnings.
+- Dev server compiles clean; dev.log clean (no errors/warnings after removing robots.txt conflict). Console clean.
+- agent-browser verified: skip link, Trending rail, search highlighting (1 mark on "Headphones"), TrustBadge "Verified", Share button toast, login rate limit (5×401 then 429 with Retry-After), security headers (CSP/HSTS/X-Frame/etc.), robots.txt + sitemap.xml 200, JSON-LD Organization+WebSite in HTML.
+- curl verified: all security headers present; rate-limit headers (Retry-After: 888, X-RateLimit-Limit: 5).
+
+## 6. Production readiness assessment
+**Ready for a soft launch with these caveats:**
+- ✅ Security: rate limiting, input validation, security headers, CSRF-safe cookie auth, no build-error suppression.
+- ✅ SEO/AEO: metadata, JSON-LD, sitemap, robots.
+- ✅ Accessibility: skip link, ARIA, semantic HTML, keyboard nav, color contrast.
+- ✅ Affiliate compliance: disclosure banner + trademark notice (Amazon Associates required).
+- ⚠️ **Before real launch**: (1) replace placeholder affiliate URLs in DB with real Amazon Associate URLs (with your tag); (2) set `NEXT_PUBLIC_SITE_URL` env var to your real domain (used in sitemap/robots/OG); (3) set a strong `SESSION_SECRET` env var (currently a dev fallback); (4) swap the in-memory rate limiter for Redis if running multiple instances; (5) run behind HTTPS (HSTS header only applies over HTTPS); (6) the admin password `admin123` is a demo — change it or add a password-change flow.
+
+## 7. What else can be improved (next round)
+- Real product detail pages (server-rendered `/product/[id]`) for per-product SEO + canonical URLs (currently everything is a client-side dialog).
+- Image optimization with `next/image` (currently raw <img>) — would add lazy loading + responsive sizes + AVIF.
+- Admin: per-product click drill-down page + CSV export of clicks.
+- Public "Top Deals" landing content for SEO keywords.
+- Password change + second admin user flow in the admin panel.
+- Analytics event for "add to wishlist" / "compare" (currently only clicks tracked).
+- Performance: code-split the admin panel (it's only needed when clicking Admin).
+
+Stage Summary:
+- All 4 suggested improvements shipped. Production readiness: yes with documented caveats. Security hardened (rate limit + validation + headers + strict build). SEO/AEO (metadata + JSON-LD + sitemap + robots). WCAG (skip link + ARIA + semantics + keyboard). Lint clean. Verified end-to-end.

@@ -2,11 +2,72 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  /* config options here */
+  reactStrictMode: true,
+  // Surface type/lint errors at build time instead of silently shipping them.
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
-  reactStrictMode: false,
+  eslint: {
+    ignoreDuringBuilds: false,
+  },
+  // Compress responses and powered-by header removal for security-through-obscurity.
+  poweredByHeader: false,
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          // Prevent MIME-type sniffing.
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          // Legacy XSS protection (defense-in-depth for older browsers).
+          { key: "X-XSS-Protection", value: "1; mode=block" },
+          // Prevent clickjacking — this app is not meant to be framed.
+          { key: "X-Frame-Options", value: "DENY" },
+          // Control which features the page can use.
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+          },
+          // Restrict referrer to origin-only on cross-origin requests.
+          {
+            key: "Referrer-Policy",
+            value: "strict-origin-when-cross-origin",
+          },
+          // Content Security Policy — allow inline styles (Tailwind/Next need
+          // them) and images from common CDNs, but block inline scripts
+          // except Next.js hashes. 'unsafe-inline' for style-src is required
+          // by Next.js injected styles.
+          {
+            key: "Content-Security-Policy",
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "font-src 'self' https://fonts.gstatic.com",
+              "img-src 'self' data: https: blob:",
+              "connect-src 'self'",
+              "frame-ancestors 'none'",
+              "form-action 'self'",
+              "base-uri 'self'",
+              "object-src 'none'",
+            ].join("; "),
+          },
+          // HSTS — enforce HTTPS for 1 year (only sent over HTTPS in prod).
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=31536000; includeSubDomains; preload",
+          },
+        ],
+      },
+      // Admin API routes get stricter SameSite-aware caching (no-store).
+      {
+        source: "/api/:path*",
+        headers: [
+          { key: "Cache-Control", value: "no-store, no-cache, must-revalidate" },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

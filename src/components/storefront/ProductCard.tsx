@@ -5,6 +5,7 @@ import { Eye, Heart, GitCompareArrows, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { StarRating } from "./StarRating";
+import { HighlightMatch } from "./HighlightMatch";
 import { useWishlist } from "@/lib/wishlist-store";
 import { useCompare, COMPARE_MAX } from "@/lib/compare-store";
 import { redirectToPartner } from "@/lib/affiliate";
@@ -22,9 +23,10 @@ const badgeStyles: Record<string, string> = {
 interface ProductCardProps {
   product: Product;
   onSelect: (product: Product) => void;
+  query?: string;
 }
 
-export function ProductCard({ product, onSelect }: ProductCardProps) {
+export function ProductCard({ product, onSelect, query = "" }: ProductCardProps) {
   const wishlistToggle = useWishlist((s) => s.toggle);
   const isWishlisted = useWishlist((s) => s.has(product.id));
   const compareToggle = useCompare((s) => s.toggle);
@@ -140,11 +142,11 @@ export function ProductCard({ product, onSelect }: ProductCardProps) {
         <div className="flex flex-col gap-1.5 p-3">
           {product.brand && (
             <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-              {product.brand}
+              <HighlightMatch text={product.brand} query={query} />
             </p>
           )}
           <h3 className="line-clamp-2 min-h-[2.5rem] text-sm font-medium leading-snug">
-            {product.title}
+            <HighlightMatch text={product.title} query={query} />
           </h3>
           <StarRating
             rating={product.rating}
