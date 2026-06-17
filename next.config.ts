@@ -21,8 +21,9 @@ const nextConfig: NextConfig = {
           { key: "X-Content-Type-Options", value: "nosniff" },
           // Legacy XSS protection (defense-in-depth for older browsers).
           { key: "X-XSS-Protection", value: "1; mode=block" },
-          // Prevent clickjacking — this app is not meant to be framed.
-          { key: "X-Frame-Options", value: "DENY" },
+          // Clickjacking protection — allow same-origin framing (so the
+          // preview panel works) but block cross-origin embeds.
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
           // Control which features the page can use.
           {
             key: "Permissions-Policy",
@@ -46,7 +47,7 @@ const nextConfig: NextConfig = {
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: https: blob:",
               "connect-src 'self'",
-              "frame-ancestors 'none'",
+              "frame-ancestors 'self'",
               "form-action 'self'",
               "base-uri 'self'",
               "object-src 'none'",
@@ -67,6 +68,17 @@ const nextConfig: NextConfig = {
         ],
       },
     ];
+  },
+  images: {
+    // Allow optimization of product images hosted on Unsplash (and the
+    // common Amazon CDN). Add more hosts here as needed.
+    remotePatterns: [
+      { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "m.media-amazon.com" },
+      { protocol: "https", hostname: "**.amazon.com" },
+    ],
+    // Use modern formats + lazy loading by default.
+    formats: ["image/avif", "image/webp"],
   },
 };
 

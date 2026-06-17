@@ -11,6 +11,9 @@ import {
   Check,
   ExternalLink,
   Info,
+  UserPlus,
+  Trash2,
+  Users,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,6 +21,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
 interface SettingsData {
@@ -55,6 +68,92 @@ export function SettingsSection() {
   const [confirmPw, setConfirmPw] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [pwBusy, setPwBusy] = useState(false);
+
+  // Admin users state
+  interface AdminUserRow {
+    id: string;
+    username: string;
+    name: string | null;
+    role: string;
+    createdAt: string;
+  }
+  const [users, setUsers] = useState<AdminUserRow[]>([]);
+  const [usersLoading, setUsersLoading] = useState(true);
+  const [newUsername, setNewUsername] = useState("");
+  const [newName, setNewName] = useState("");
+  const [newUserPw, setNewUserPw] = useState("");
+  const [creatingUser, setCreatingUser] = useState(false);
+  const [deletingUser, setDeletingUser] = useState<AdminUserRow | null>(null);
+  const [deleteUserBusy, setDeleteUserBusy] = useState(false);
+
+  const loadUsers = async () => {
+    setUsersLoading(true);
+    try {
+      const res = await fetch("/api/admin/users");
+      const data = await res.json();
+      if (data.users) setUsers(data.users);
+    } catch {
+      /* ignore */
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  const createUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreatingUser(true);
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: newUsername,
+          name: newName,
+          password: newUserPw,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Create failed");
+      toast.success("User created", {
+        description: `${newUsername} can now sign in.`,
+      });
+      setNewUsername("");
+      setNewName("");
+      setNewUserPw("");
+      loadUsers();
+    } catch (err) {
+      toast.error("Could not create user", {
+        description: (err as Error).message,
+      });
+    } finally {
+      setCreatingUser(false);
+    }
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!deletingUser) return;
+    setDeleteUserBusy(true);
+    try {
+      const res = await fetch(`/api/admin/users/${deletingUser.id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Delete failed");
+      toast.success("User deleted", {
+        description: `@${deletingUser.username} removed.`,
+      });
+      setDeletingUser(null);
+      loadUsers();
+    } catch (err) {
+      toast.error("Delete failed", { description: (err as Error).message });
+    } finally {
+      setDeleteUserBusy(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -399,6 +498,149 @@ export function SettingsSection() {
           </form>
         </CardContent>
       </Card>
+
+      {/* Admin users management */}
+      <Card className="border-border/60">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Users className="h-4 w-4 text-amber-500" />
+            Admin Users
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Existing users */}
+          <div className="space-y-2">
+            {usersLoading ? (
+              <div className="space-y-2">
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <div key={i} className="h-12 animate-pulse rounded-lg bg-muted" />
+                ))}
+              </div>
+            ) : (
+              users.map((u) => (
+                <div
+                  key={u.id}
+                  className="flex items-center gap-3 rounded-lg border p-3"
+                >
+                  <div className="grid size-9 shrink-0 place-items-center rounded-full bg-emerald-500/15 font-semibold text-emerald-600">
+                    {u.username[0]?.toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">
+                      {u.name || `@${u.username}`}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      @{u.username} · {u.role}
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    {new Date(u.createdAt).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </span>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 shrink-0 text-rose-600 hover:bg-rose-500/10 hover:text-rose-700"
+                    onClick={() => setDeletingUser(u)}
+                    aria-label={`Delete user @${u.username}`}
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+
+          <Separator />
+
+          {/* Create new user */}
+          <form onSubmit={createUser} className="space-y-3">
+            <p className="text-sm font-medium">Add a new admin</p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="nu-username">Username</Label>
+                <Input
+                  id="nu-username"
+                  value={newUsername}
+                  onChange={(e) => setNewUsername(e.target.value)}
+                  required
+                  disabled={creatingUser}
+                  placeholder="e.g. editor1"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="nu-name">Name (optional)</Label>
+                <Input
+                  id="nu-name"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  disabled={creatingUser}
+                  placeholder="Jane Editor"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="nu-pw">Password</Label>
+                <Input
+                  id="nu-pw"
+                  type="password"
+                  value={newUserPw}
+                  onChange={(e) => setNewUserPw(e.target.value)}
+                  required
+                  disabled={creatingUser}
+                  placeholder="min 8 chars"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <Button
+                type="submit"
+                disabled={creatingUser}
+                className="gap-2 bg-amber-500 text-zinc-950 hover:bg-amber-400"
+              >
+                {creatingUser ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <UserPlus className="size-4" />
+                )}
+                Create user
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      <AlertDialog
+        open={!!deletingUser}
+        onOpenChange={(o) => !o && setDeletingUser(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete admin user?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Remove @{deletingUser?.username}? They will immediately lose
+              access. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteUserBusy}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteUser}
+              disabled={deleteUserBusy}
+              className="bg-rose-600 text-white hover:bg-rose-700"
+            >
+              {deleteUserBusy ? (
+                <Loader2 className="mr-2 size-4 animate-spin" />
+              ) : (
+                <Trash2 className="mr-2 size-4" />
+              )}
+              Delete user
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

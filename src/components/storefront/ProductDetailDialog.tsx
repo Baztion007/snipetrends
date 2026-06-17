@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import {
   Dialog,
   DialogContent,
@@ -416,9 +417,12 @@ function ProductGallery({
   return (
     <div className="flex flex-col gap-2 bg-muted">
       <div className="relative aspect-square overflow-hidden bg-muted md:aspect-auto">
-        <img
+        <Image
           src={gallery[activeImage] ?? product.image}
           alt={product.title}
+          fill
+          priority
+          sizes="(max-width: 768px) 100vw, 50vw"
           className="size-full object-cover"
         />
         {product.badge && (
@@ -452,7 +456,7 @@ function ProductGallery({
                   : "border-transparent opacity-70 hover:opacity-100"
               )}
             >
-              <img src={src} alt="" className="size-full object-cover" />
+              <Image src={src} alt="" fill sizes="56px" className="size-full object-cover" />
             </button>
           ))}
         </div>

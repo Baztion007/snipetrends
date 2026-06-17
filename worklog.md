@@ -421,3 +421,46 @@ Agent: orchestrator
 
 Stage Summary:
 - Preview fixed (rate limiter cleared). Password change flow working. Affiliate config (Associate tag) configurable in admin Settings, auto-appended to all outbound links. GitHub (CI + .gitignore + .env.example) + Cloudflare (wrangler.toml + README deploy guide) ready. "Where do I add affiliate links?" answered: Admin → Settings → Amazon Associate Tag. Lint clean. All verified.
+
+---
+Task ID: 16 (user request — preview fix + all documented improvements)
+Agent: orchestrator
+
+## 1. Preview fix (root cause found)
+- The Z.ai preview panel embeds the page in an **iframe**. My earlier security headers (`X-Frame-Options: DENY` + `frame-ancestors 'none'`) BLOCKED the iframe from rendering → blank preview.
+- Fixed in `next.config.ts`: changed to `X-Frame-Options: SAMEORIGIN` + `frame-ancestors 'self'`. Still blocks cross-origin clickjacking but allows the same-origin preview iframe. Verified: preview now renders (4238 chars, no errors).
+
+## 2. All documented improvements — implemented
+
+### A. Code-split the admin panel
+- `src/app/page.tsx` now uses `next/dynamic` to lazy-load `AdminPanel` only when the user clicks "Admin". Storefront visitors never download the admin bundle (charts, tables, forms). Shows a loading skeleton during the dynamic import. Verified: storefront loads without admin; clicking Admin dynamically loads the login/dashboard.
+
+### B. next/image optimization
+- Added `images.remotePatterns` (Unsplash + Amazon CDNs) + `formats: ['avif','webp']` to `next.config.ts`.
+- Converted `ProductCard` (main grid image) + `ProductDetailDialog` (gallery main + thumbnails) from raw `<img>` to `next/image` with `fill` + responsive `sizes`. Verified: 22 images now served via next/image (with srcset/data-nimg) → AVIF/WebP + lazy loading + no CLS.
+
+### C. Per-product click drill-down (admin)
+- API: `GET /api/admin/products/[id]/clicks` → total clicks, 14-day daily series, recent click history (IP/UA/referrer/time).
+- UI: `ClickDetailDialog.tsx` — opens from a new "stats" (BarChart3) button on each product row. Shows product header + total-clicks badge, 14-day bar chart, recent-clicks table (when/source/device), and a link to the affiliate URL. Verified: opened for "GlowRing" product → showed 5 clicks + chart + recent clicks table.
+
+### D. CSV export of clicks (admin)
+- API: `GET /api/admin/clicks/export?days=30` → CSV (click_id, timestamp, product_id, product_title, ip, user_agent, referrer) with proper escaping + Content-Disposition.
+- UI: "Export clicks" button in the Products toolbar. Downloads a CSV via blob URL. Verified: toast "CSV exported".
+
+### E. Admin user management (second admin user)
+- API: `GET/POST /api/admin/users` (list + create, with duplicate-username check + password policy) + `DELETE /api/admin/users/[id]` (blocks self-deletion + last-admin deletion).
+- UI: new "Admin Users" card in Settings — lists all admins (avatar, username, role, created date, delete button) + a "Create user" form (username/name/password). AlertDialog confirm on delete.
+- Verified: created `editor1` (Jane Editor, editorpass123) → toast "User created" → appeared in list → `editor1` can log in (HTTP 200) → deleted via UI → toast "User deleted" → only `admin` remains. Self-deletion blocked with 400 "You cannot delete your own account while signed in."
+
+## 3. Verification
+- `bun run lint` → 0 errors, 0 warnings.
+- Dev server compiles clean; dev.log clean; console clean.
+- agent-browser verified: preview renders (4238 chars), next/image (22 optimized imgs), admin code-split (loads on demand), click-stats dialog (5 clicks + chart + table), CSV export toast, user create/login/delete, self-deletion blocked.
+
+## 4. Items still deferred (single-route constraint / deployment-specific)
+- **Real product detail pages (`/product/[id]`)** — BLOCKED by the project constraint that only the `/` route is user-visible. The product detail is a client dialog instead.
+- **Cloudflare KV rate limiting** — deployment-specific; the in-memory limiter works for single-instance. Documented in README for multi-instance.
+- **Amazon Product Advertising API sync** — future enhancement to auto-pull real prices/stock.
+
+Stage Summary:
+- Preview fixed (frame-ancestors SAMEORIGIN). All 5 documented improvements shipped: code-split admin, next/image, per-product click drill-down, CSV export, admin user management. Lint clean. All verified via agent-browser.

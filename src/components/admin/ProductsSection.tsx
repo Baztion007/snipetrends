@@ -9,6 +9,8 @@ import {
   Star,
   PackageOpen,
   Loader2,
+  BarChart3,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +46,7 @@ import { toast } from "sonner";
 import { formatPrice, formatCompact, discountPercent } from "@/lib/format";
 import type { Category, Product } from "@/lib/types";
 import { ProductFormDialog } from "./ProductFormDialog";
+import { ClickDetailDialog } from "./ClickDetailDialog";
 
 const badgeClass: Record<string, string> = {
   deal: "bg-amber-500/15 text-amber-600 border-amber-500/30",
@@ -60,6 +63,8 @@ export function ProductsSection({ categories }: { categories: Category[] }) {
   const [editing, setEditing] = useState<Product | null>(null);
   const [deleting, setDeleting] = useState<Product | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
+  const [statsProduct, setStatsProduct] = useState<Product | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -93,6 +98,28 @@ export function ProductsSection({ categories }: { categories: Category[] }) {
   const openEdit = (p: Product) => {
     setEditing(p);
     setFormOpen(true);
+  };
+
+  const exportCsv = async () => {
+    setExporting(true);
+    try {
+      const res = await fetch("/api/admin/clicks/export?days=30");
+      if (!res.ok) throw new Error("Export failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `affiliate-clicks-30d-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("CSV exported", { description: "Last 30 days of clicks." });
+    } catch (e) {
+      toast.error("Export failed", { description: (e as Error).message });
+    } finally {
+      setExporting(false);
+    }
   };
 
   const confirmDelete = async () => {
@@ -132,6 +159,19 @@ export function ProductsSection({ categories }: { categories: Category[] }) {
         >
           <Plus className="mr-2 h-4 w-4" />
           Add Product
+        </Button>
+        <Button
+          variant="outline"
+          onClick={exportCsv}
+          disabled={exporting}
+          className="gap-2"
+        >
+          {exporting ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <Download className="size-4" />
+          )}
+          <span className="hidden sm:inline">Export clicks</span>
         </Button>
       </div>
 
@@ -293,6 +333,15 @@ export function ProductsSection({ categories }: { categories: Category[] }) {
                           <Button
                             size="icon"
                             variant="ghost"
+                            onClick={() => setStatsProduct(p)}
+                            className="h-8 w-8"
+                            aria-label={`Click stats for ${p.title}`}
+                          >
+                            <BarChart3 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
                             onClick={() => openEdit(p)}
                             className="h-8 w-8"
                           >
@@ -357,6 +406,11 @@ export function ProductsSection({ categories }: { categories: Category[] }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ClickDetailDialog
+        product={statsProduct}
+        onOpenChange={(o) => !o && setStatsProduct(null)}
+      />
     </div>
   );
 }
