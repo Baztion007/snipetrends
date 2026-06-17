@@ -3,12 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
   reactStrictMode: true,
-  // Surface type/lint errors at build time instead of silently shipping them.
+  // Surface type errors at build time instead of silently shipping them.
   typescript: {
     ignoreBuildErrors: false,
-  },
-  eslint: {
-    ignoreDuringBuilds: false,
   },
   // Compress responses and powered-by header removal for security-through-obscurity.
   poweredByHeader: false,

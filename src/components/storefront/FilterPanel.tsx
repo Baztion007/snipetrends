@@ -8,7 +8,6 @@ import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatPrice } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Product } from "@/lib/types";
@@ -133,23 +132,21 @@ export function FilterPanel({
             <Label className="text-xs font-semibold uppercase tracking-wide block">
               Brands
             </Label>
-            <ScrollArea className="max-h-40">
-              <div className="flex flex-col gap-2 pr-2">
-                {brands.map((b) => (
-                  <label
-                    key={b}
-                    className="flex min-w-0 cursor-pointer items-center gap-2 text-sm"
-                  >
-                    <Checkbox
-                      checked={filters.brands.includes(b)}
-                      onCheckedChange={() => toggleBrand(b)}
-                      className="border-zinc-400 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 shrink-0"
-                    />
-                    <span className="truncate min-w-0">{b}</span>
-                  </label>
-                ))}
-              </div>
-            </ScrollArea>
+            <div className="flex flex-col gap-2 pr-2">
+              {brands.map((b) => (
+                <label
+                  key={b}
+                  className="flex min-w-0 cursor-pointer items-center gap-2 text-sm"
+                >
+                  <Checkbox
+                    checked={filters.brands.includes(b)}
+                    onCheckedChange={() => toggleBrand(b)}
+                    className="border-zinc-400 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 shrink-0"
+                  />
+                  <span className="truncate min-w-0">{b}</span>
+                </label>
+              ))}
+            </div>
           </div>
           <Separator />
         </>
