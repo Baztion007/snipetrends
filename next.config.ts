@@ -67,14 +67,14 @@ const nextConfig: NextConfig = {
     ];
   },
   images: {
-    // Allow optimization of product images hosted on Unsplash (and the
-    // common Amazon CDN). Add more hosts here as needed.
+    // Allow optimization of product images from common hosts.
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "unsplash.com" },
       { protocol: "https", hostname: "m.media-amazon.com" },
       { protocol: "https", hostname: "**.amazon.com" },
+      { protocol: "https", hostname: "**.ssl-images-amazon.com" },
     ],
-    // Use modern formats + lazy loading by default.
     formats: ["image/avif", "image/webp"],
   },
 };

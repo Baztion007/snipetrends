@@ -6,8 +6,13 @@ import { PackageOpen } from "lucide-react";
 
 /**
  * next/image wrapper with a graceful fallback. If the remote image fails to
- * load (404, timeout, optimization error), a neutral placeholder is shown
- * instead of a blank box — so product cards never look broken.
+ * load (404, timeout, optimization error, non-image URL), a neutral
+ * placeholder is shown instead of a blank box.
+ *
+ * Also catches the case where a user pastes an Unsplash *page* URL
+ * (https://unsplash.com/photos/...) instead of the actual image URL
+ * (https://images.unsplash.com/photo-...). In that case, the next/image
+ * optimizer will fail and we show the fallback.
  */
 type SmartImageProps = Omit<ImageProps, "onError"> & {
   fallbackLabel?: string;
@@ -17,11 +22,16 @@ export function SmartImage({
   alt,
   className,
   fallbackLabel,
+  src,
   ...props
 }: SmartImageProps) {
   const [failed, setFailed] = useState(false);
 
-  if (failed) {
+  // Validate the src — if it's not a string or not an http(s) URL, show fallback.
+  const srcStr = typeof src === "string" ? src : "";
+  const isValidUrl = srcStr.startsWith("http://") || srcStr.startsWith("https://");
+
+  if (failed || !isValidUrl) {
     return (
       <div
         className={`flex items-center justify-center bg-muted text-muted-foreground ${className ?? ""}`}
@@ -44,6 +54,7 @@ export function SmartImage({
     <Image
       alt={alt}
       className={className}
+      src={src}
       onError={() => setFailed(true)}
       {...props}
     />

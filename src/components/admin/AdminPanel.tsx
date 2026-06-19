@@ -8,6 +8,9 @@ import { ProductsSection } from "./ProductsSection";
 import { CategoriesSection } from "./CategoriesSection";
 import { AnalyticsSection } from "./AnalyticsSection";
 import { SettingsSection } from "./SettingsSection";
+import { BlogSection } from "./BlogSection";
+import { CollectionsSection } from "./CollectionsSection";
+import { PriceAlertsSection } from "./PriceAlertsSection";
 import type { Category } from "@/lib/types";
 
 interface AdminPanelProps {
@@ -94,11 +97,16 @@ export function AdminPanel({ onExit }: AdminPanelProps) {
       onLoggedOut={() => {
         setSession(null);
         setSection("dashboard");
+        // Return to the storefront after signing out (not the login screen).
+        onExit();
       }}
     >
       {section === "dashboard" && <DashboardSection />}
       {section === "products" && <ProductsSection categories={categories} />}
       {section === "categories" && <CategoriesSection />}
+      {section === "collections" && <CollectionsSection categories={categories} />}
+      {section === "blog" && <BlogSection />}
+      {section === "price-alerts" && <PriceAlertsSection />}
       {section === "analytics" && <AnalyticsSection />}
       {section === "settings" && <SettingsSection />}
     </AdminShell>

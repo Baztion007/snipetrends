@@ -11,6 +11,7 @@ import {
   Loader2,
   BarChart3,
   Download,
+  Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +48,7 @@ import { formatPrice, formatCompact, discountPercent } from "@/lib/format";
 import type { Category, Product } from "@/lib/types";
 import { ProductFormDialog } from "./ProductFormDialog";
 import { ClickDetailDialog } from "./ClickDetailDialog";
+import { BulkImportDialog } from "./BulkImportDialog";
 
 const badgeClass: Record<string, string> = {
   deal: "bg-amber-500/15 text-amber-600 border-amber-500/30",
@@ -65,6 +67,7 @@ export function ProductsSection({ categories }: { categories: Category[] }) {
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [statsProduct, setStatsProduct] = useState<Product | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -159,6 +162,14 @@ export function ProductsSection({ categories }: { categories: Category[] }) {
         >
           <Plus className="mr-2 h-4 w-4" />
           Add Product
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => setImportOpen(true)}
+          className="gap-2"
+        >
+          <Upload className="size-4" />
+          <span className="hidden sm:inline">Import ASINs</span>
         </Button>
         <Button
           variant="outline"
@@ -410,6 +421,12 @@ export function ProductsSection({ categories }: { categories: Category[] }) {
       <ClickDetailDialog
         product={statsProduct}
         onOpenChange={(o) => !o && setStatsProduct(null)}
+      />
+      <BulkImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        categories={categories}
+        onDone={load}
       />
     </div>
   );

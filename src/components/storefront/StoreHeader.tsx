@@ -1,9 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { ShoppingBag, Search, User, Heart } from "lucide-react";
+import { ShoppingBag, Search, User, Heart, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -11,18 +9,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SearchSuggestions } from "./SearchSuggestions";
 import { useWishlist } from "@/lib/wishlist-store";
 import { useSiteSettings } from "@/lib/use-site-settings";
+import { useAdminSession } from "@/lib/use-admin-session";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
-import type { Category } from "@/lib/types";
+import type { Category, Product } from "@/lib/types";
 
 export const DEALS_SENTINEL = "__deals__";
 
 interface StoreHeaderProps {
   onOpenAdmin: () => void;
+  onOpenBlog: () => void;
   onOpenWishlist: () => void;
   onSearch: (q: string) => void;
+  onSelectProduct?: (p: Product) => void;
   categories: Category[];
   activeCategory: string | null;
   onCategory: (id: string | null) => void;
@@ -30,23 +32,19 @@ interface StoreHeaderProps {
 
 export function StoreHeader({
   onOpenAdmin,
+  onOpenBlog,
   onOpenWishlist,
   onSearch,
+  onSelectProduct,
   categories,
   activeCategory,
   onCategory,
 }: StoreHeaderProps) {
-  const [q, setQ] = useState("");
   const wishCount = useWishlist((s) => s.count());
   const { siteName } = useSiteSettings();
-
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSearch(q.trim());
-  };
+  const { isAdmin } = useAdminSession();
 
   const goHome = () => {
-    setQ("");
     onSearch("");
     onCategory(null);
   };
@@ -71,21 +69,12 @@ export function StoreHeader({
           </button>
 
           {/* Search — desktop */}
-          <form
-            onSubmit={submit}
-            className="hidden flex-1 items-center gap-2 sm:flex"
-            role="search"
-          >
-            <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-400" />
-              <Input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="Search products, brands, and more…"
-                aria-label="Search products"
-                className="h-10 border-zinc-700 bg-zinc-900 pl-9 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-amber-500 focus-visible:ring-amber-500/30"
-              />
-            </div>
+          <div className="hidden flex-1 items-center gap-2 sm:flex">
+            <SearchSuggestions
+              onSearch={onSearch}
+              onSelectProduct={onSelectProduct}
+              className="flex-1"
+            />
             <Select
               value={activeCategory ?? "all"}
               onValueChange={(v) => onCategory(v === "all" ? null : v)}
@@ -107,14 +96,15 @@ export function StoreHeader({
               </SelectContent>
             </Select>
             <Button
-              type="submit"
+              type="button"
+              onClick={() => onSearch("")}
               size="lg"
-              className="h-10 bg-amber-500 text-zinc-950 hover:bg-amber-600"
+              className="hidden lg:flex h-10 bg-amber-500 text-zinc-950 hover:bg-amber-600"
               aria-label="Search"
             >
               <Search size={16} />
             </Button>
-          </form>
+          </div>
 
           {/* Actions */}
           <div className="ml-auto flex items-center gap-1 sm:gap-2">
@@ -136,40 +126,32 @@ export function StoreHeader({
             <Button
               variant="ghost"
               size="sm"
+              onClick={onOpenBlog}
+              className="hidden h-10 gap-2 text-zinc-100 hover:bg-zinc-800 hover:text-white md:inline-flex"
+            >
+              <FileText size={18} />
+              <span className="hidden lg:inline">Blog</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={onOpenAdmin}
               className="h-10 gap-2 text-zinc-100 hover:bg-zinc-800 hover:text-white"
             >
               <User size={18} />
-              <span className="hidden md:inline">Admin</span>
+              <span className="hidden md:inline">{isAdmin ? "Dashboard" : "Sign In"}</span>
             </Button>
           </div>
         </div>
 
         {/* Search — mobile */}
-        <form
-          onSubmit={submit}
-          className="flex items-center gap-2 px-3 pb-2 sm:hidden"
-          role="search"
-        >
-          <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-400" />
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search products…"
-              aria-label="Search products"
-              className="h-10 border-zinc-700 bg-zinc-900 pl-9 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-amber-500"
-            />
-          </div>
-          <Button
-            type="submit"
-            size="icon"
-            className="h-10 w-10 shrink-0 bg-amber-500 text-zinc-950 hover:bg-amber-600"
-            aria-label="Search"
-          >
-            <Search size={18} />
-          </Button>
-        </form>
+        <div className="px-3 pb-2 sm:hidden">
+          <SearchSuggestions
+            onSearch={onSearch}
+            onSelectProduct={onSelectProduct}
+            placeholder="Search products…"
+          />
+        </div>
       </div>
 
       {/* Sub bar — category quick links */}

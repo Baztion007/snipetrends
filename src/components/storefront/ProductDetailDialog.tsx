@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TrustBadge } from "./TrustBadge";
+import { PriceAlertForm } from "./PriceAlertForm";
 import type { Product } from "@/lib/types";
 
 const badgeStyles: Record<string, string> = {
@@ -211,6 +212,27 @@ export function ProductDetailDialog({
                   </p>
                 )}
 
+                {/* Why we recommend — editorial curation signal */}
+                <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
+                  <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-amber-600 dark:text-amber-400">
+                    <ShieldCheck className="size-3.5" />
+                    Why we recommend this
+                  </p>
+                  <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+                    {product.rating >= 4.5
+                      ? `Top-rated by ${product.reviewCount.toLocaleString()} verified buyers with a ${product.rating.toFixed(1)}-star average. `
+                      : `Recommended by ${product.reviewCount.toLocaleString()} buyers. `}
+                    {product.badge === "bestseller"
+                      ? "A consistent bestseller in its category."
+                      : product.badge === "deal"
+                      ? "Currently on sale — great value pick."
+                      : product.badge === "new"
+                      ? "A new arrival worth watching."
+                      : "Independently reviewed by our editors."}
+                    {" "}Affiliate relationships never influence our recommendations.
+                  </p>
+                </div>
+
                 {/* Tabbed info */}
                 <Tabs defaultValue="specs" className="w-full">
                   <TabsList className="grid w-full grid-cols-3">
@@ -292,6 +314,9 @@ export function ProductDetailDialog({
                     </div>
                   </TabsContent>
                 </Tabs>
+
+                {/* Price-drop alert */}
+                <PriceAlertForm product={product} />
 
                 {product.category && (
                   <p className="text-xs text-muted-foreground">

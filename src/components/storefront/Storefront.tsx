@@ -39,6 +39,7 @@ import type { Product, Category } from "@/lib/types";
 
 export interface StorefrontProps {
   onOpenAdmin: () => void;
+  onOpenBlog: () => void;
 }
 
 const sortOptions = [
@@ -46,7 +47,7 @@ const sortOptions = [
   { value: "rating", label: "Top Rated" },
 ];
 
-export function Storefront({ onOpenAdmin }: StorefrontProps) {
+export function Storefront({ onOpenAdmin, onOpenBlog }: StorefrontProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -158,6 +159,10 @@ export function Storefront({ onOpenAdmin }: StorefrontProps) {
 
   const handleFooterNav = useCallback(
     (nav: FooterNav) => {
+      if (nav === "blog") {
+        onOpenBlog();
+        return;
+      }
       setLoading(true);
       setSearchQuery("");
       switch (nav) {
@@ -180,7 +185,7 @@ export function Storefront({ onOpenAdmin }: StorefrontProps) {
       }
       scrollToGrid();
     },
-    []
+    [onOpenBlog]
   );
 
   // Client-side filtering on the fetched products.
@@ -216,8 +221,10 @@ export function Storefront({ onOpenAdmin }: StorefrontProps) {
       </a>
       <StoreHeader
         onOpenAdmin={onOpenAdmin}
+        onOpenBlog={onOpenBlog}
         onOpenWishlist={() => setWishlistOpen(true)}
         onSearch={handleSearch}
+        onSelectProduct={setSelected}
         categories={categories}
         activeCategory={activeCategory}
         onCategory={handleCategory}

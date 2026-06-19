@@ -2,8 +2,7 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["driverAdapters"]
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -77,6 +76,8 @@ model Product {
   categoryId    String
   category      Category @relation(fields: [categoryId], references: [id])
   clicks        AffiliateClick[]
+  priceAlerts   PriceAlert[]
+  collections   CollectionItem[]
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -103,4 +104,76 @@ model Subscriber {
   id        String   @id @default(cuid())
   email     String   @unique
   createdAt DateTime @default(now())
+}
+
+// ─── Feature 1: Price-drop alerts ─────────────────────────────────────────
+// Visitors subscribe to be notified when a product's price drops.
+// The "triggeredPrice" is set when an admin/cron updates a product's price
+// below the subscriber's threshold — used to send the notification email.
+model PriceAlert {
+  id             String   @id @default(cuid())
+  email          String
+  productId      String
+  product        Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  threshold      Float    // notify when price drops below this
+  triggered      Boolean  @default(false)
+  triggeredAt    DateTime?
+  createdAt      DateTime @default(now())
+
+  @@index([productId])
+  @@index([email])
+  @@index([triggered])
+}
+
+// ─── Feature 2: Blog / content pages ──────────────────────────────────────
+// SEO-focused articles for category landing content ("Best Wireless Headphones").
+model BlogPost {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  excerpt     String?
+  content     String   // markdown body
+  coverImage  String?
+  category    String?  // e.g. "guides", "reviews", "deals"
+  tags        String?  // comma-separated
+  published   Boolean  @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([published])
+  @@index([slug])
+  @@index([category])
+}
+
+// ─── Feature 3: Gift guides / curated collections ─────────────────────────
+// Themed product lists ("Back to School", "Gifts Under $50", etc.).
+model Collection {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String?
+  coverImage  String?
+  // "guide" (gift guide) | "edit" (editor's pick) | "seasonal" (holiday)
+  type        String   @default("guide")
+  published   Boolean  @default(false)
+  items       CollectionItem[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([published])
+  @@index([type])
+}
+
+model CollectionItem {
+  id           String     @id @default(cuid())
+  collectionId String
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  productId    String
+  product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sortOrder    Int        @default(0)
+  note         String?    // why this product is in the collection
+
+  @@index([collectionId])
+  @@index([productId])
 }

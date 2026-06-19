@@ -19,22 +19,15 @@ import { toast } from "sonner";
 import { useSiteSettings } from "@/lib/use-site-settings";
 
 export type FooterNav =
+  | "blog"
   | "deals"
   | "top-rated"
   | "new"
   | "all-categories"
-  | "how-we-curate"
-  | "our-mission"
-  | "editorial-guidelines"
   | "contact"
   | "affiliate-disclosure"
-  | "how-we-make-money"
   | "privacy"
-  | "terms"
-  | "using-this-site"
-  | "faq"
-  | "report-issue"
-  | "accessibility";
+  | "terms";
 
 // Affiliate-relevant footer. "Affiliate disclosure" and the bottom-bar
 // disclaimer are required by the Amazon Associates Operating Agreement.
@@ -45,34 +38,16 @@ const columns: { title: string; links: { label: string; nav: FooterNav }[] }[] =
       { label: "Today's Deals", nav: "deals" },
       { label: "Top Rated", nav: "top-rated" },
       { label: "New Arrivals", nav: "new" },
-      { label: "All Categories", nav: "all-categories" },
-    ],
-  },
-  {
-    title: "About",
-    links: [
-      { label: "How we curate", nav: "how-we-curate" },
-      { label: "Our mission", nav: "our-mission" },
-      { label: "Editorial guidelines", nav: "editorial-guidelines" },
-      { label: "Contact us", nav: "contact" },
+      { label: "Blog & Guides", nav: "blog" },
     ],
   },
   {
     title: "Disclosure",
     links: [
       { label: "Affiliate disclosure", nav: "affiliate-disclosure" },
-      { label: "How we make money", nav: "how-we-make-money" },
       { label: "Privacy policy", nav: "privacy" },
       { label: "Terms of use", nav: "terms" },
-    ],
-  },
-  {
-    title: "Help",
-    links: [
-      { label: "Using this site", nav: "using-this-site" },
-      { label: "FAQ", nav: "faq" },
-      { label: "Report an issue", nav: "report-issue" },
-      { label: "Accessibility", nav: "accessibility" },
+      { label: "Contact us", nav: "contact" },
     ],
   },
 ];
@@ -84,55 +59,23 @@ const socials = [
   { icon: Github, label: "GitHub", key: "socialGithub" as const },
 ];
 
-// Longer informational blurbs shown in a toast for legal/about links.
+// Longer informational blurbs shown in a toast for legal links.
 const infoText: Partial<Record<FooterNav, { title: string; body: string }>> = {
-  "how-we-curate": {
-    title: "How we curate",
-    body: "Our editors research and test products across categories. We prioritize verified reviews, value, and long-term reliability.",
-  },
-  "our-mission": {
-    title: "Our mission",
-    body: "To help you make confident buying decisions by surfacing the best products — without the noise.",
-  },
-  "editorial-guidelines": {
-    title: "Editorial guidelines",
-    body: "Recommendations are independent. Affiliate relationships never influence ratings or placement.",
-  },
   contact: {
     title: "Contact us",
-    body: "", // filled dynamically in handleNav
+    body: "",
   },
   "affiliate-disclosure": {
     title: "Affiliate disclosure",
-    body: "As an Amazon Associate, ShopAffiliate earns from qualifying purchases at no extra cost to you.",
-  },
-  "how-we-make-money": {
-    title: "How we make money",
-    body: "We earn a small commission when you buy through our links. This never affects the price you pay.",
+    body: "",
   },
   privacy: {
     title: "Privacy policy",
-    body: "We only store what's needed to run the site (cart, wishlist in your browser). No third-party tracking beyond analytics.",
+    body: "We store only what's needed to run the site (wishlist + cart in your browser, newsletter email if you subscribe). No third-party tracking beyond analytics.",
   },
   terms: {
     title: "Terms of use",
-    body: "Content is for general information. Prices and availability are set by Amazon and may change.",
-  },
-  "using-this-site": {
-    title: "Using this site",
-    body: "Browse, filter, and compare. Click 'View on Amazon' on any product to complete your purchase on Amazon.",
-  },
-  faq: {
-    title: "FAQ",
-    body: "Q: Do I pay more? A: No — the price is identical. Q: Who handles shipping? A: Amazon, with Prime benefits.",
-  },
-  "report-issue": {
-    title: "Report an issue",
-    body: "", // filled dynamically in handleNav
-  },
-  accessibility: {
-    title: "Accessibility",
-    body: "We aim for WCAG 2.1 AA. Keyboard navigation, ARIA labels, and contrast are prioritized throughout.",
+    body: "Content is for general information. Product availability and pricing are set by Amazon and may change at any time.",
   },
 };
 
@@ -178,18 +121,17 @@ export function StoreFooter({ onNavigate }: StoreFooterProps) {
   };
 
   const handleNav = (nav: FooterNav) => {
-    // Browse links delegate to the parent for real filtering actions.
-    const browseNavs: FooterNav[] = ["deals", "top-rated", "new", "all-categories"];
+    // Browse + blog links delegate to the parent for real actions.
+    const browseNavs: FooterNav[] = ["deals", "top-rated", "new", "all-categories", "blog"];
     if (browseNavs.includes(nav)) {
       onNavigate?.(nav);
       return;
     }
-    // Info/legal links show a toast summary (no dedicated pages exist yet).
+    // Info/legal links show a toast summary.
     const info = infoText[nav];
     if (info) {
       let body = info.body;
       if (nav === "contact") body = `Email ${contactInfo} with questions or partnership inquiries.`;
-      if (nav === "report-issue") body = `Spotted a broken link? Email ${contactInfo}. Thanks for helping us improve!`;
       if (nav === "affiliate-disclosure") body = `As an Amazon Associate, ${siteName} earns from qualifying purchases at no extra cost to you.`;
       toast(info.title, { description: body });
     }
@@ -211,7 +153,7 @@ export function StoreFooter({ onNavigate }: StoreFooterProps) {
       </div>
 
       <div className="mx-auto max-w-7xl px-4 py-10">
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-6">
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
           {/* Brand + newsletter */}
           <div className="lg:col-span-2">
             <div className="flex items-center gap-2">

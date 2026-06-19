@@ -27,6 +27,5 @@ jobs:
       - name: Lint
         run: bun run lint
 
-      # Type-check without emitting (catches TS errors without a full build).
       - name: Type-check
         run: bunx tsc --noEmit

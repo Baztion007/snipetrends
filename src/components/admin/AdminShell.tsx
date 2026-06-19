@@ -7,6 +7,9 @@ import {
   Tags,
   BarChart3,
   Settings,
+  FileText,
+  FolderOpen,
+  Bell,
   LogOut,
   Store,
   ShieldCheck,
@@ -24,7 +27,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { AdminUser } from "./AdminLogin";
 
-export type AdminSection = "dashboard" | "products" | "categories" | "analytics" | "settings";
+export type AdminSection = "dashboard" | "products" | "categories" | "collections" | "blog" | "price-alerts" | "analytics" | "settings";
 
 interface AdminShellProps {
   user: AdminUser;
@@ -39,6 +42,9 @@ const NAV: { id: AdminSection; label: string; icon: typeof Package }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "products", label: "Products", icon: Package },
   { id: "categories", label: "Categories", icon: Tags },
+  { id: "collections", label: "Collections", icon: FolderOpen },
+  { id: "blog", label: "Blog", icon: FileText },
+  { id: "price-alerts", label: "Price Alerts", icon: Bell },
   { id: "analytics", label: "Analytics", icon: BarChart3 },
   { id: "settings", label: "Settings", icon: Settings },
 ];
@@ -64,6 +70,10 @@ function SidebarContent({
     } catch {
       /* ignore */
     }
+    // Invalidate the storefront's cached session state so the header
+    // updates from "Dashboard" back to "Sign In".
+    const { invalidateAdminSession } = await import("@/lib/use-admin-session");
+    invalidateAdminSession();
     toast.success("Signed out");
     onLoggedOut();
   };

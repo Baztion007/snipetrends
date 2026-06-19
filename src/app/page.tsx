@@ -3,6 +3,7 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { Storefront } from "@/components/storefront";
+import { BlogPage } from "@/components/storefront/BlogPage";
 
 // Code-split the admin panel so storefront visitors never download the
 // admin bundle (charts, tables, forms). It loads on demand when the user
@@ -22,7 +23,7 @@ const AdminPanel = dynamic(
   }
 );
 
-type View = "store" | "admin";
+type View = "store" | "admin" | "blog";
 
 export default function Home() {
   const [view, setView] = useState<View>("store");
@@ -31,5 +32,14 @@ export default function Home() {
     return <AdminPanel onExit={() => setView("store")} />;
   }
 
-  return <Storefront onOpenAdmin={() => setView("admin")} />;
+  if (view === "blog") {
+    return <BlogPage onBack={() => setView("store")} onOpenAdmin={() => setView("admin")} />;
+  }
+
+  return (
+    <Storefront
+      onOpenAdmin={() => setView("admin")}
+      onOpenBlog={() => setView("blog")}
+    />
+  );
 }
